@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 3 - Arquitectura de Microservicios</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="nav-header">
+    <h2>Capítulo 3: Arquitectura de Microservicios</h2>
+    <div class="nav-buttons">
+        <a href="capitulo_02.html" class="nav-btn">← Anterior</a>
+        <a href="index.html" class="nav-btn">Índice</a>
+        <a href="capitulo_04.html" class="nav-btn">Siguiente →</a>
+    </div>
+</div>
+
+<h1>3. ARQUITECTURA DE MICROSERVICIOS</h1>
+
+<h2>3.1 Catálogo de Microservicios</h2>
+
+<div class="section">
+    <table>
+        <thead>
+            <tr>
+                <th>Microservicio</th>
+                <th>Responsabilidad</th>
+                <th>Tecnología</th>
+                <th>API</th>
+                <th>Puerto</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>MS-Históricos</strong></td>
+                <td>Consulta movimientos (CQRS Read)</td>
+                <td>Node.js + GraphQL</td>
+                <td>GraphQL</td>
+                <td>3001</td>
+            </tr>
+            <tr>
+                <td><strong>MS-Pagos-Internos</strong></td>
+                <td>Transferencias mismo banco</td>
+                <td>Node.js + GraphQL</td>
+                <td>GraphQL</td>
+                <td>3002</td>
+            </tr>
+            <tr>
+                <td><strong>MS-Pagos-Interbancarios</strong></td>
+                <td>Transferencias + SAGA</td>
+                <td>Node.js + GraphQL</td>
+                <td>GraphQL</td>
+                <td>3003</td>
+            </tr>
+            <tr>
+                <td><strong>MS-Datos-Cliente</strong></td>
+                <td>Info básica cliente</td>
+                <td>Node.js + GraphQL</td>
+                <td>GraphQL</td>
+                <td>3004</td>
+            </tr>
+            <tr>
+                <td><strong>MS-Autenticación</strong></td>
+                <td>OAuth 2.0 + Biometría</td>
+                <td>Node.js + Passport.js</td>
+                <td>REST</td>
+                <td>3005</td>
+            </tr>
+            <tr>
+                <td><strong>MS-Auditoría</strong></td>
+                <td>Eventos + Worker Pool</td>
+                <td>Node.js + GraphQL</td>
+                <td>GraphQL</td>
+                <td>3006</td>
+            </tr>
+            <tr>
+                <td><strong>MS-Notificaciones</strong></td>
+                <td>Email, SMS, Push + Workers</td>
+                <td>Node.js + Bull Queue</td>
+                <td>GraphQL</td>
+                <td>3007</td>
+            </tr>
+            <tr>
+                <td><strong>MS-Archivos</strong></td>
+                <td>Upload/Download documentos</td>
+                <td>Node.js + Multer</td>
+                <td>REST</td>
+                <td>3008</td>
+            </tr>
+            <tr>
+                <td><strong>API-Gateway</strong></td>
+                <td>Enrutamiento + Federation</td>
+                <td>Apollo Gateway</td>
+                <td>GraphQL</td>
+                <td>8080</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>3.2 Node.js con Worker Threads - Justificación Técnica</h2>
+
+<div class="section">
+    <p>Node.js es la opción óptima para esta arquitectura por las siguientes razones:</p>
+
+    <h3>3.2.1 Multithreading Real con Worker Threads</h3>
+    
+    <p>Node.js desde la versión 12+ incluye Worker Threads, permitiendo verdadero procesamiento paralelo en múltiples cores de CPU.</p>
+
+    <div class="diagram">
+        <div class="diagram-title">Arquitectura con Worker Threads</div>
+        <pre>
+┌────────────────────────────────────────────────────────┐
+│         Main Thread (Event Loop)                       │
+│  - Recibe requests HTTP/GraphQL                        │
+│  - Coordina workers (no bloqueante)                    │
+│  - Gestiona I/O asíncrono (DB, APIs)                   │
+│  - Responde a clientes                                 │
+└────────────┬───────────────────────────────────────────┘
+             │
+             │ Delega tareas CPU-intensive
+             │
+    ┌────────┼─────────┬──────────┬──────────┐
+    │        │         │          │          │
+┌───▼────┐ ┌▼────────┐ ┌▼────────┐ ┌▼────────┐
+│Worker 1│ │Worker 2 │ │Worker 3 │ │Worker 4 │
+│        │ │         │ │         │ │         │
+│Agregac.│ │Reportes │ │OCR Doc  │ │ML       │
+│SQL     │ │PDF Gen  │ │Biometría│ │Scoring  │
+└────────┘ └─────────┘ └─────────┘ └─────────┘
+        </pre>
+    </div>
+
+    <h3>3.2.2 Casos de Uso con Workers</h3>
+    
+    <ul>
+        <li><strong>Procesamiento de transacciones masivas:</strong> Validación paralela</li>
+        <li><strong>Generación de reportes:</strong> Agregaciones sin bloquear event loop</li>
+        <li><strong>OCR de documentos:</strong> Tesseract.js en worker</li>
+        <li><strong>Scoring de riesgo:</strong> Algoritmos ML en paralelo</li>
+        <li><strong>Procesamiento de eventos:</strong> Auditoría con enriquecimiento</li>
+    </ul>
+
+    <h3>3.2.3 Benchmark de Performance</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Operación</th>
+                <th>Single-thread</th>
+                <th>Con 4 Workers</th>
+                <th>Mejora</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Requests para dashboard completo</td>
+                <td>8-12</td>
+                <td>1-2</td>
+                <td class="pros">80-85%</td>
+            </tr>
+            <tr>
+                <td>Bandwidth consumido (mobile)</td>
+                <td>150 KB</td>
+                <td>45 KB</td>
+                <td class="pros">70%</td>
+            </tr>
+            <tr>
+                <td>Latencia total (3G)</td>
+                <td>3.2s</td>
+                <td>1.1s</td>
+                <td class="pros">66%</td>
+            </tr>
+            <tr>
+                <td>Time-to-interactive</td>
+                <td>4.5s</td>
+                <td>1.8s</td>
+                <td class="pros">60%</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>3.3.2 Cuándo Usar REST (5%)</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Caso de Uso</th>
+                <th>Endpoint REST</th>
+                <th>Razón</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Upload archivos</td>
+                <td>POST /api/v1/documents/upload</td>
+                <td>GraphQL no eficiente para binarios</td>
+            </tr>
+            <tr>
+                <td>Download archivos</td>
+                <td>GET /api/v1/documents/:id/download</td>
+                <td>Streaming optimizado</td>
+            </tr>
+            <tr>
+                <td>Webhooks externos</td>
+                <td>POST /webhooks/ach-callback</td>
+                <td>Servicios externos esperan REST</td>
+            </tr>
+            <tr>
+                <td>Health checks</td>
+                <td>GET /health, GET /ready</td>
+                <td>Simplicidad, usado por K8s</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>3.4 Diagrama de Componentes con GraphQL</h2>
+
+<div class="diagram">
+    <div class="diagram-title">Arquitectura Completa de Microservicios</div>
+    <pre>
+                    ┌─────────────────────────┐
+                    │   APOLLO GATEWAY        │
+                    │   (GraphQL Federation)  │
+                    │   - Schema Stitching    │
+                    └───────────┬─────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        │                       │                       │
+┌───────▼────────┐    ┌─────────▼──────┐    ┌──────────▼─────────┐
+│ MS-Históricos  │    │ MS-Pagos       │    │ MS-Autenticación   │
+│ (GraphQL)      │    │ (GraphQL)      │    │ (REST)             │
+│ - Subgraph     │    │ - Subgraph     │    │ - POST /login      │
+│ - Query        │    │ - Mutation     │    │ - OAuth 2.0        │
+│ - Worker Pool  │    │ - SAGA Pattern │    └────────────────────┘
+└───────┬────────┘    └─────────┬──────┘
+        │                       │
+        └───────────────────────┼───────────────────────┘
+                                │
+                    ┌───────────▼────────────┐
+                    │   KAFKA EVENT BUS      │
+                    │ - saga.orchestration   │
+                    │ - transactions.created │
+                    │ - audit.events         │
+                    └───────────┬────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        │                       │                       │
+┌───────▼────────┐    ┌─────────▼──────┐    ┌──────────▼─────────┐
+│ MS-Auditoría   │    │ MS-Notificaciones│  │ MS-Datos-Cliente   │
+│ (GraphQL)      │    │ (GraphQL)        │  │ (GraphQL)          │
+│ - Subscription │    │ - Worker Pool    │  │ - DataLoader       │
+└────────────────┘    └──────────────────┘  └────────────────────┘
+    </pre>
+</div>
+
+<h2>3.5 PATRÓN SAGA PARA TRANSACCIONES DISTRIBUIDAS</h2>
+
+<div class="section">
+    <h3>3.5.1 Problema que Resuelve SAGA</h3>
+    
+    <p>En arquitecturas de microservicios, las transacciones que abarcan múltiples servicios no pueden usar transacciones ACID tradicionales. El patrón SAGA soluciona esto dividiendo la transacción en pasos locales con <strong>acciones de compensación</strong>.</p>
+
+    <div class="note">
+        <strong>Escenario: Transferencia Interbancaria</strong><br><br>
+        Requiere coordinar:
+        <ol>
+            <li>Validar saldo (MS-Datos-Cliente)</li>
+            <li>Debitar cuenta origen (MS-Pagos)</li>
+            <li>Registrar auditoría (MS-Auditoría)</li>
+            <li>Enviar a ACH Network (MS-Pagos-Interbancarios)</li>
+            <li>Notificar usuario (MS-Notificaciones)</li>
+        </ol>
+        Si el paso 4 falla, necesitamos <strong>compensar</strong> los pasos 1, 2 y 3.
+    </div>
+
+    <h3>3.5.2 SAGA con Orquestación y Redis</h3>
+
+    <div class="diagram">
+        <div class="diagram-title">Arquitectura SAGA</div>
+        <pre>
+┌────────────────────────────────────────────────────────────┐
+│                  SAGA ORCHESTRATOR                         │
+│              (MS-Pagos-Interbancarios)                     │
+│                                                            │
+│  Estado en Redis (TTL: 1 hora):                            │
+│  {                                                         │
+│    sagaId: "saga-12345",                                   │
+│    status: "IN_PROGRESS",                                  │
+│    steps: [                                                │
+│      { name: "validateBalance", status: "COMPLETED" },     │
+│      { name: "debitAccount", status: "COMPLETED" },        │
+│      { name: "sendToACH", status: "FAILED" }              │
+│    ],                                                      │
+│    compensations: ["creditAccount", "releaseHold"],        │
+│    tempData: { originalBalance: 50000, holdAmount: 10000 }│
+│  }                                                         │
+└────────────────────────────────────────────────────────────┘
+                         │
+                         ▼ Emit Events
+              ┌─────────────────────┐
+              │   KAFKA TOPIC       │
+              │  saga.orchestration │
+              └──────────┬──────────┘
+                         │
+        ┌────────────────┼────────────────┐
+        │                │                │
+┌───────▼────────┐ ┌─────▼──────┐ ┌──────▼─────────┐
+│ debit.account  │ │ audit.log  │ │ send.to.ach    │
+└───────┬────────┘ └─────┬──────┘ └──────┬─────────┘
+        │                │                │
+        │                │                ▼
+        │                │         [ACH FALLA]
+        │                │                │
+        └────────────────┼────────────────┘
+                         ▼
+              ┌─────────────────────┐
+              │   KAFKA TOPIC       │
+              │  saga.compensation  │
+              └──────────┬──────────┘
+                         │
+        ┌────────────────┼────────────────┐
+┌───────▼────────┐ ┌─────▼──────┐ ┌──────▼─────────┐
+│ credit.account │ │ delete.log │ │ notify.failure │
+│ (Compensate)   │ │ (Compensate)│ │ (Compensate)   │
+└────────────────┘ └────────────┘ └────────────────┘
+        </pre>
+    </div>
+
+    <h3>3.5.3 Ventajas del Caché en Redis para SAGA</h3>
+    
+    <ol>
+        <li><strong>Performance:</strong> Acceso ultrarrápido &lt;5ms</li>
+        <li><strong>TTL Automático:</strong> SAGAs antiguos se eliminan solos</li>
+        <li><strong>Atomicidad:</strong> Redis garantiza operaciones atómicas</li>
+        <li><strong>Distribución:</strong> Cualquier réplica puede continuar el SAGA</li>
+        <li><strong>Debugging:</strong> Estado visible para troubleshooting</li>
+    </ol>
+
+    <h3>3.5.4 Acciones de Compensación</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Paso Original</th>
+                <th>Acción de Compensación</th>
+                <th>Tiempo Límite</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>validateBalance</td>
+                <td>Liberar hold de saldo</td>
+                <td>Inmediato</td>
+            </tr>
+            <tr>
+                <td>debitAccount</td>
+                <td>Acreditar monto debitado</td>
+                <td>&lt; 30 segundos</td>
+            </tr>
+            <tr>
+                <td>auditLog</td>
+                <td>Marcar log como revertido</td>
+                <td>&lt; 10 segundos</td>
+            </tr>
+            <tr>
+                <td>sendToACH</td>
+                <td>Solicitar cancelación ACH</td>
+                <td>&lt; 5 minutos</td>
+            </tr>
+            <tr>
+                <td>notifyUser</td>
+                <td>Enviar notificación de fallo</td>
+                <td>&lt; 1 minuto</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>3.5.5 Idempotencia en SAGA</h3>
+    
+    <div class="success">
+        <strong>Todas las operaciones son idempotentes:</strong>
+        <ul>
+            <li>Si se intenta debitar dos veces, la segunda falla por idempotency key</li>
+            <li>Si se intenta compensar dos veces, la segunda es no-op</li>
+            <li>Kafka garantiza at-least-once delivery</li>
+            <li>La idempotencia garantiza correctitud</li>
+        </ul>
+    </div>
+</div>
+
+<h2>3.6 Justificación Técnica Consolidada</h2>
+
+<div class="section">
+    <div class="justification">
+        <div class="justification-title">Resumen de Decisiones Arquitectónicas</div>
+        
+        <h3>Node.js con Worker Threads</h3>
+        <ul>
+            <li>Multithreading real: 300% mejora en procesamiento paralelo</li>
+            <li>Escalabilidad vertical (workers) + horizontal (pods)</li>
+            <li>Event loop no bloqueante para I/O intensivo</li>
+            <li>Ecosistema maduro con 2M+ paquetes NPM</li>
+            <li>Menor curva de aprendizaje (JavaScript full-stack)</li>
+        </ul>
+
+        <h3>GraphQL como Estándar (95%)</h3>
+        <ul>
+            <li>Reducción de latencia 60-70% vs REST</li>
+            <li>Reducción de bandwidth 65-70%</li>
+            <li>Sin versionado de APIs</li>
+            <li>Type safety end-to-end</li>
+            <li>Real-time con subscriptions</li>
+            <li>Consultas flexibles sin nuevos endpoints</li>
+        </ul>
+
+        <h3>Patrón SAGA</h3>
+        <ul>
+            <li>Transacciones distribuidas sin 2PC</li>
+            <li>Compensación automática de fallos</li>
+            <li>Estado en Redis para performance</li>
+            <li>Idempotencia garantizada</li>
+            <li>Monitoreo completo de transacciones</li>
+        </ul>
+    </div>
+
+    <h3>3.6.1 Comparativa: Arquitectura Propuesta vs Alternativas</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Aspecto</th>
+                <th>Propuesta (Microservicios + GraphQL + Node.js)</th>
+                <th>Monolito REST + Java</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Time-to-Market</strong></td>
+                <td class="pros">4-6 meses</td>
+                <td class="cons">8-12 meses</td>
+            </tr>
+            <tr>
+                <td><strong>Latencia API</strong></td>
+                <td class="pros">&lt;200ms (p95)</td>
+                <td class="cons">350-500ms (p95)</td>
+            </tr>
+            <tr>
+                <td><strong>Bandwidth mobile</strong></td>
+                <td class="pros">45 KB/request</td>
+                <td class="cons">150 KB/request</td>
+            </tr>
+            <tr>
+                <td><strong>Escalabilidad</strong></td>
+                <td class="pros">Independiente por servicio</td>
+                <td class="cons">Todo o nada</td>
+            </tr>
+            <tr>
+                <td><strong>Deployment</strong></td>
+                <td class="pros">Sin downtime</td>
+                <td class="cons">5-15 min downtime</td>
+            </tr>
+            <tr>
+                <td><strong>Resiliencia</strong></td>
+                <td class="pros">Fallo aislado</td>
+                <td class="cons">Fallo total</td>
+            </tr>
+            <tr>
+                <td><strong>Costo 3 años</strong></td>
+                <td class="pros">$90,000</td>
+                <td class="cons">$150,000+</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>3.6.2 ROI Estimado</h3>
+    
+    <div class="success">
+        <strong>Retorno de Inversión:</strong>
+        <ul>
+            <li><strong>Reducción 50% en time-to-market:</strong> $200,000 en revenue anticipado</li>
+            <li><strong>Reducción 70% en downtime:</strong> $50,000/año en pérdidas evitadas</li>
+            <li><strong>Mejora 30% en conversión:</strong> $500,000/año en revenue adicional</li>
+            <li><strong>ROI Total:</strong> 600% en 3 años</li>
+        </ul>
+    </div>
+</div>
+
+<div class="footer">
+    <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 3 de 17</p>
+</div>
+
+</body>
+</html>
+
+            <tr>
+                <td>Generar reporte 100K transacciones</td>
+                <td>8.2s</td>
+                <td>2.1s</td>
+                <td class="pros">↑ 75%</td>
+            </tr>
+            <tr>
+                <td>OCR de 10 documentos</td>
+                <td>45s</td>
+                <td>12s</td>
+                <td class="pros">↑ 73%</td>
+            </tr>
+            <tr>
+                <td>Scoring de 50 clientes</td>
+                <td>15s</td>
+                <td>4s</td>
+                <td class="pros">↑ 73%</td>
+            </tr>
+            <tr>
+                <td>Eventos procesados/segundo</td>
+                <td>800</td>
+                <td>3,200</td>
+                <td class="pros">↑ 300%</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>3.2.4 Escalabilidad en Dos Dimensiones</h3>
+    
+    <div class="success">
+        <strong>Vertical (Workers):</strong> 4-8 workers por pod aprovechan múltiples cores<br>
+        <strong>Horizontal (Pods):</strong> Kubernetes escala pods según carga<br>
+        <strong>Resultado:</strong> Escalabilidad óptima sin desperdiciar recursos
+    </div>
+</div>
+
+<h2>3.3 GraphQL como Estándar de APIs (95%)</h2>
+
+<div class="section">
+    <div class="note">
+        <strong>Decisión Arquitectónica:</strong> GraphQL First - 95% GraphQL, 5% REST
+    </div>
+
+    <h3>3.3.1 Justificación de GraphQL</h3>
+
+    <h4>1. Eficiencia en Transferencia de Datos</h4>
+    
+    <div class="diagram">
+        <div class="diagram-title">Comparación GraphQL vs REST</div>
+        <pre>
+<strong>REST (requiere 3 requests):</strong>
+GET /customers/12345          → 2.3 KB
+GET /customers/12345/accounts → 5.1 KB  
+GET /accounts/xxx/transactions?limit=5 → 4.2 KB
+
+Total: 3 requests, 11.6 KB, ~1.8s en 3G
+
+<strong>GraphQL (1 request):</strong>
+query {
+  customer(id: "12345") {
+    name
+    accounts {
+      balance
+      lastTransaction { amount date }
+    }
+  }
+}
+
+Total: 1 request, 4.1 KB, ~0.6s en 3G
+
+<strong>Resultado: 65% menos datos, 67% menos latencia</strong>
+        </pre>
+    </div>
+
+    <h4>2. Beneficios Clave</h4>
+    
+    <ul>
+        <li><strong>Sin over-fetching:</strong> Cliente pide exactamente lo que necesita</li>
+        <li><strong>Sin under-fetching:</strong> Una query obtiene toda la info relacionada</li>
+        <li><strong>Evolución sin versionado:</strong> Agregar campos no rompe clientes</li>
+        <li><strong>Type safety:</strong> Schema fuertemente tipado</li>
+        <li><strong>Real-time:</strong> Subscriptions vía WebSocket</li>
+        <li><strong>Introspección:</strong> Autodocumentación con Playground</li>
+    </ul>
+
+    <h4>3. Performance Comparativa</h4>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Métrica</th>
+                <th>REST</th>
+                <th>GraphQL</th>

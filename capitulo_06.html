@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 6 - Autenticación OAuth 2.0 y Biometría</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="nav-header">
+    <h2>Capítulo 6: Autenticación OAuth 2.0 y Biometría</h2>
+    <div class="nav-buttons">
+        <a href="capitulo-05.html" class="nav-btn">← Anterior</a>
+        <a href="index.html" class="nav-btn">Índice</a>
+        <a href="capitulo-07.html" class="nav-btn">Siguiente →</a>
+    </div>
+</div>
+
+<h1>6. ARQUITECTURA DE AUTENTICACIÓN OAUTH 2.0 Y BIOMETRÍA</h1>
+
+<h2>6.1 Flujo de Autenticación Recomendado</h2>
+
+<div class="section">
+    <p>La compañía ya cuenta con un servicio OAuth 2.0, por lo que se implementa el flujo <strong>Authorization Code Flow with PKCE</strong> (Proof Key for Code Exchange), recomendado para aplicaciones móviles y SPA por su mayor seguridad.</p>
+
+    <div class="note">
+        <strong>¿Por qué PKCE?</strong>
+        <ul>
+            <li>Protege contra ataques de intercepción de código de autorización</li>
+            <li>No requiere client secret en aplicaciones públicas (móvil/SPA)</li>
+            <li>Recomendado por IETF (RFC 7636) para aplicaciones nativas</li>
+            <li>Compatible con OAuth 2.0 estándar</li>
+        </ul>
+    </div>
+</div>
+
+<h2>6.2 Diagrama de Flujo OAuth 2.0 con PKCE</h2>
+
+<div class="section">
+    <div class="diagram">
+        <div class="diagram-title">Flujo Completo de Autenticación</div>
+        <pre>
+┌─────────────┐                                      ┌──────────────┐
+│  App Móvil  │                                      │ OAuth Server │
+│  / SPA      │                                      │ (Existente)  │
+└──────┬──────┘                                      └───────┬──────┘
+       │                                                     │
+       │ 1. Generar code_verifier (random)                  │
+       │    code_challenge = SHA256(code_verifier)          │
+       │                                                     │
+       │ 2. Solicitud de autorización                       │
+       │    + code_challenge                                │
+       │    + code_challenge_method = "S256"                │
+       ├────────────────────────────────────────────────────►
+       │                                                     │
+       │ 3. Usuario ingresa credenciales                    │
+       │    (user + password)                               │
+       │                                                     │
+       │ 4. [OPCIONAL] Factor adicional (OTP/SMS)           │
+       │                                                     │
+       │◄────────────────────────────────────────────────────┤
+       │ 5. Authorization Code (válido 60 segundos)         │
+       │                                                     │
+       │ 6. Intercambio de código por tokens                │
+       │    + code_verifier (para validar)                  │
+       ├────────────────────────────────────────────────────►
+       │                                                     │
+       │    OAuth Server valida:                            │
+       │    SHA256(code_verifier) == code_challenge         │
+       │                                                     │
+       │◄────────────────────────────────────────────────────┤
+       │ 7. Access Token (JWT, 15 min)                      │
+       │    + Refresh Token (30 días)                       │
+       │    + ID Token (info usuario)                       │
+       │                                                     │
+       │ 8. [OPCIONAL] Solicitud de biometría               │
+       │    (Face ID / Touch ID)                            │
+       ▼                                                     │
+┌──────────────┐                                            │
+│ MS-Biometría │                                            │
+└──────┬───────┘                                            │
+       │ 9. Validación biométrica local                     │
+       │    (Device Secure Enclave)                         │
+       │                                                     │
+       │ 10. Token biométrico adicional                     │
+       │     (almacenado localmente)                        │
+       └─────────────────────────────────────────────────────┘
+        </pre>
+    </div>
+
+    <h3>6.2.1 Componentes del Flujo</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Componente</th>
+                <th>Descripción</th>
+                <th>Duración</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>code_verifier</strong></td>
+                <td>Cadena aleatoria de 43-128 caracteres</td>
+                <td>Un solo uso</td>
+            </tr>
+            <tr>
+                <td><strong>code_challenge</strong></td>
+                <td>SHA256(code_verifier) en base64url</td>
+                <td>Un solo uso</td>
+            </tr>
+            <tr>
+                <td><strong>authorization_code</strong></td>
+                <td>Código temporal para intercambiar por tokens</td>
+                <td>60 segundos</td>
+            </tr>
+            <tr>
+                <td><strong>access_token</strong></td>
+                <td>JWT firmado con claims del usuario</td>
+                <td>15 minutos</td>
+            </tr>
+            <tr>
+                <td><strong>refresh_token</strong></td>
+                <td>Token opaco para renovar access_token</td>
+                <td>30 días</td>
+            </tr>
+            <tr>
+                <td><strong>id_token</strong></td>
+                <td>JWT con información del usuario (OpenID)</td>
+                <td>15 minutos</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>6.3 Integración del Onboarding con Reconocimiento Facial</h2>
+
+<div class="section">
+    <p>Durante el proceso de registro (onboarding), el sistema captura y valida la identidad del usuario mediante reconocimiento facial con <strong>liveness detection</strong>.</p>
+
+    <h3>6.3.1 Flujo Completo de Onboarding</h3>
+    
+    <div class="diagram">
+        <div class="diagram-title">Proceso de Registro con Biometría</div>
+        <pre>
+PASO 1: Registro Inicial
+─────────────────────────
+App Móvil → GraphQL Mutation: registerUser
+  │
+  ├─► Datos personales (Nombre, Email, Teléfono, Fecha nacimiento)
+  ├─► Validación de formato en frontend
+  │
+  └─► MS-Autenticación (REST POST /api/auth/register)
+      │
+      ├─► Valida unicidad de email/teléfono
+      ├─► Hashea contraseña (bcrypt, salt rounds: 12)
+      ├─► Crea usuario (status: PENDING_VERIFICATION)
+      ├─► Genera OTP de 6 dígitos (válido 10 minutos)
+      │
+      └─► Envía SMS/Email con OTP
+          │
+          ▼
+Usuario ingresa OTP
+  └─► POST /api/auth/verify-otp
+      ├─► Valida OTP (máximo 3 intentos)
+      └─► [Si válido] → Status: PENDING_IDENTITY
+
+PASO 2: Verificación de Identidad (KYC)
+──────────────────────────────────────
+App Móvil → Captura documentos
+  │
+  ├─► Foto documento (frente): POST /api/documents/upload
+  ├─► Foto documento (reverso): POST /api/documents/upload
+  │
+  └─► MS-KYC procesa en Worker Thread
+      │
+      ├─► OCR extrae datos (Tesseract.js)
+      │   └─► Nombre, Número ID, Fecha nacimiento, etc.
+      │
+      ├─► Valida autenticidad del documento
+      │   ├─► Marcas de agua
+      │   ├─► Holograma
+      │   └─► Formato correcto
+      │
+      ├─► Compara datos con formulario inicial
+      │   └─► Similarity > 90% requerido
+      │
+      ├─► Valida contra watchlist AML/CFT
+      │   └─► Listas OFAC, ONU, locales
+      │
+      └─► [Si OK] → Status: PENDING_BIOMETRIC
+          [Si FALLA] → Rechaza registro, notifica usuario
+
+PASO 3: Registro Biométrico
+────────────────────────────
+App Móvil → Solicita video selfie
+  │
+  ├─► Usuario graba video corto (3-5 segundos)
+  │   ├─► Instrucciones: Mueve cabeza, parpadea
+  │   └─► POST /api/biometric/register-face
+  │
+  └─► MS-Biometría procesa en Worker Thread
+      │
+      ├─► Liveness Detection
+      │   ├─► Detecta movimiento natural
+      │   ├─► Parpadeo real (no es foto)
+      │   ├─► Textura de piel (no es pantalla)
+      │   └─► Challenge-response (gira cabeza)
+      │
+      ├─► Extrae vectores faciales (embeddings)
+      │   └─► API: AWS Rekognition / Azure Face
+      │
+      ├─► Compara rostro con foto del documento
+      │   ├─► Similarity score calculado
+      │   └─► Threshold: > 95% requerido
+      │
+      ├─► Almacena embeddings cifrados
+      │   └─► HashiCorp Vault (AES-256)
+      │
+      └─► [Si OK] → Status: ACTIVE
+          [Si FALLA] → Solicita nuevo intento (máximo 3)
+
+PASO 4: Activación de Cuenta
+─────────────────────────────
+  ├─► Notificación SMS/Email: "Cuenta activada"
+  ├─► Usuario puede hacer login
+  └─► Biometría habilitada (Face ID / Touch ID)
+        </pre>
+    </div>
+</div>
+
+<h2>6.4 Métodos de Autenticación Post-Registro</h2>
+
+<div class="section">
+    <p>Una vez completado el onboarding, el usuario puede autenticarse mediante múltiples métodos, ordenados por nivel de seguridad:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Método</th>
+                <th>Tecnología</th>
+                <th>Seguridad</th>
+                <th>UX</th>
+                <th>Tiempo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Face ID / Face Recognition</strong></td>
+                <td>Biometría facial + Liveness</td>
+                <td class="pros">Muy Alta</td>
+                <td class="pros">Excelente</td>
+                <td>~2 segundos</td>
+            </tr>
+            <tr>
+                <td><strong>Touch ID / Fingerprint</strong></td>
+                <td>Sensor biométrico dispositivo</td>
+                <td class="pros">Muy Alta</td>
+                <td class="pros">Excelente</td>
+                <td>~1 segundo</td>
+            </tr>
+            <tr>
+                <td><strong>Usuario + Contraseña + OTP</strong></td>
+                <td>TOTP (Google Authenticator)</td>
+                <td class="pros">Alta</td>
+                <td>Buena</td>
+                <td>~15 segundos</td>
+            </tr>
+            <tr>
+                <td><strong>Usuario + Contraseña</strong></td>
+                <td>Bcrypt hash + Salt</td>
+                <td>Media</td>
+                <td>Estándar</td>
+                <td>~10 segundos</td>
+            </tr>
+            <tr>
+                <td><strong>PIN de 6 dígitos</strong></td>
+                <td>Cifrado local</td>
+                <td>Media</td>
+                <td>Rápida</td>
+                <td>~3 segundos</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>6.4.1 Flujo de Login con Biometría</h3>
+    
+    <pre>
+Usuario abre app → Detecta soporte de biometría
+  │
+  ├─► Solicita Face ID / Touch ID
+  │
+  ├─► Sistema operativo valida (Secure Enclave)
+  │   ├─► iOS: Face ID / Touch ID
+  │   └─► Android: BiometricPrompt API
+  │
+  └─► [Si exitoso]
+      │
+      ├─► App recupera token biométrico local
+      │   └─► Almacenado en Keychain (iOS) / Keystore (Android)
+      │
+      └─► POST /api/auth/biometric-login
+          │
+          ├─► MS-Autenticación valida token
+          ├─► Compara embeddings con Vault
+          │   └─► Similarity > 95%
+          │
+          └─► Emite JWT (Access Token + Refresh Token)
+              └─► Usuario autenticado (< 3 segundos total)
+    </pre>
+</div>
+
+<h2>6.5 Arquitectura de Seguridad</h2>
+
+<div class="section">
+    <h3>6.5.1 HashiCorp Vault para Gestión de Secretos</h3>
+    
+    <div class="diagram">
+        <div class="diagram-title">Arquitectura de Vault</div>
+        <pre>
+┌──────────────────────────────────────────────┐
+│          HASHICORP VAULT CLUSTER             │
+│                                              │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │ Vault 1  │  │ Vault 2  │  │ Vault 3  │   │
+│  │ (Active) │  │(Standby) │  │(Standby) │   │
+│  └─────┬────┘  └─────┬────┘  └─────┬────┘   │
+│        │             │             │         │
+│        └─────────────┼─────────────┘         │
+│                      │                       │
+│              ┌───────▼───────┐               │
+│              │  Storage      │               │
+│              │  (Consul/etcd)│               │
+│              └───────────────┘               │
+└──────────────────────────────────────────────┘
+                      │
+        ┌─────────────┼─────────────┐
+        │             │             │
+┌───────▼──────┐ ┌────▼────┐ ┌─────▼──────┐
+│ Kubernetes   │ │  Apps   │ │  CI/CD     │
+│ (Secrets     │ │ (API    │ │ (Deploy    │
+│  Injection)  │ │  Keys)  │ │  Secrets)  │
+└──────────────┘ └─────────┘ └────────────┘
+        </pre>
+    </div>
+
+    <h4>Secretos Gestionados en Vault:</h4>
+    <ul>
+        <li><strong>Credenciales de bases de datos</strong> (rotación automática cada 90 días)</li>
+        <li><strong>API keys de servicios externos</strong> (Firebase, AWS Rekognition, etc.)</li>
+        <li><strong>Certificados SSL/TLS</strong></li>
+        <li><strong>Claves de cifrado</strong> (AES-256)</li>
+        <li><strong>OAuth client secrets</strong></li>
+        <li><strong>Claves de firma JWT</strong> (RS256 private key)</li>
+        <li><strong>Embeddings biométricos cifrados</strong></li>
+    </ul>
+
+    <h3>6.5.2 Políticas de Contraseñas</h3>
+    
+    <div class="note">
+        <strong>Requisitos de Contraseña:</strong>
+        <ul>
+            <li>Mínimo 12 caracteres</li>
+            <li>Al menos 1 mayúscula, 1 minúscula, 1 número, 1 carácter especial</li>
+            <li>No puede contener datos personales (nombre, email, fecha nacimiento)</li>
+            <li>No puede ser una contraseña común (checklist de 10,000 passwords comunes)</li>
+            <li>Historial de últimas 5 contraseñas (no reutilizar)</li>
+            <li>Expiración cada 90 días (opcional, configurable)</li>
+            <li>Bloqueo tras 5 intentos fallidos (30 minutos)</li>
+        </ul>
+    </div>
+
+    <h3>6.5.3 Rate Limiting y Protección Anti-Fuerza Bruta</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Evento</th>
+                <th>Umbral</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Login fallido</td>
+                <td>3 intentos en 5 minutos</td>
+                <td>Activar CAPTCHA</td>
+            </tr>
+            <tr>
+                <td>Login fallido</td>
+                <td>5 intentos en 15 minutos</td>
+                <td>Bloqueo temporal (30 min)</td>
+            </tr>
+            <tr>
+                <td>Login fallido</td>
+                <td>10 intentos en 1 hora</td>
+                <td>Bloqueo cuenta (requiere reset)</td>
+            </tr>
+            <tr>
+                <td>Requests de login</td>
+                <td>&gt;10 req/min desde misma IP</td>
+                <td>Rate limiting + CAPTCHA</td>
+            </tr>
+            <tr>
+                <td>Solicitudes OTP</td>
+                <td>&gt;3 en 10 minutos</td>
+                <td>Bloqueo temporal</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>6.5.4 Notificaciones de Seguridad</h3>
+    
+    <ul>
+        <li><strong>Login desde nuevo dispositivo:</strong> Email + SMS (siempre)</li>
+        <li><strong>Login desde país desconocido:</strong> Email + SMS + Bloqueo temporal</li>
+        <li><strong>Cambio de contraseña:</strong> Email + SMS (siempre)</li>
+        <li><strong>Cambio de email:</strong> Email antiguo + Email nuevo + SMS</li>
+        <li><strong>Intentos fallidos:</strong> Email después de 3 intentos</li>
+        <li><strong>Bloqueo de cuenta:</strong> Email + SMS (inmediato)</li>
+    </ul>
+</div>
+
+<h2>6.6 Proveedores de Biometría y APIs</h2>
+
+<div class="section">
+    <h3>6.6.1 Sensores Biométricos Nativos</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Plataforma</th>
+                <th>Tecnología</th>
+                <th>API</th>
+                <th>Storage</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>iOS</strong></td>
+                <td>Face ID / Touch ID</td>
+                <td>LocalAuthentication framework</td>
+                <td>Secure Enclave (hardware)</td>
+            </tr>
+            <tr>
+                <td><strong>Android</strong></td>
+                <td>Face Recognition / Fingerprint</td>
+                <td>BiometricPrompt API</td>
+                <td>Android Keystore (hardware-backed)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>6.6.2 Servicios Cloud para Verificación</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Proveedor</th>
+                <th>Servicio</th>
+                <th>Capacidad</th>
+                <th>Costo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>AWS Rekognition</strong></td>
+                <td>Face Comparison + Liveness</td>
+                <td>Similarity score, detección de vida</td>
+                <td>$1.00 por 1,000 imágenes</td>
+            </tr>
+            <tr>
+                <td><strong>Azure Face API</strong></td>
+                <td>Face Verification + Liveness</td>
+                <td>Similarity score, anti-spoofing</td>
+                <td>$1.00 por 1,000 transacciones</td>
+            </tr>
+            <tr>
+                <td><strong>Google Cloud Vision</strong></td>
+                <td>Face Detection</td>
+                <td>Detección facial, landmarks</td>
+                <td>$1.50 por 1,000 imágenes</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="success">
+        <strong>Recomendación:</strong> AWS Rekognition por:
+        <ul>
+            <li>Excelente precisión (99.9%)</li>
+            <li>Liveness detection integrado</li>
+            <li>Bajo costo ($1/1000 imágenes)</li>
+            <li>Baja latencia (&lt;500ms)</li>
+            <li>Cumplimiento SOC 2, ISO 27001</li>
+        </ul>
+    </div>
+
+    <h3>6.6.3 Liveness Detection</h3>
+    
+    <p><strong>¿Qué es Liveness Detection?</strong> Técnica para detectar si la persona frente a la cámara es real (no una foto, video o máscara).</p>
+
+    <p><strong>Técnicas Implementadas:</strong></p>
+    <ul>
+        <li><strong>Passive Liveness:</strong> Análisis de textura de piel, parpadeo natural, micro-expresiones</li>
+        <li><strong>Active Liveness:</strong> Challenge-response (gira cabeza, sonríe, parpadea)</li>
+        <li><strong>3D Depth Analysis:</strong> Detección de profundidad (cámaras 3D como Face ID)</li>
+        <li><strong>Motion Analysis:</strong> Detección de movimiento natural de rostro</li>
+    </ul>
+</div>
+
+<h2>6.7 Estructura de JWT (Access Token)</h2>
+
+<div class="section">
+    <h3>6.7.1 Payload del JWT</h3>
+    
+    <pre>
+{
+  // Registered claims (RFC 7519)
+  "iss": "https://auth.bp-bank.com",      // Issuer
+  "sub": "user-uuid-12345",                // Subject (user ID)
+  "aud": "bp-banking-app",                 // Audience
+  "exp": 1696684800,                       // Expiration (15 min)
+  "iat": 1696683900,                       // Issued at
+  "jti": "jwt-uuid-67890",                 // JWT ID (para revocación)
+  
+  // Custom claims
+  "email": "usuario@example.com",
+  "name": "Juan Pérez",
+  "roles": ["customer"],
+  "permissions": [
+    "accounts:read",
+    "transactions:read",
+    "transfers:create"
+  ],
+  "mfa_verified": true,
+  "biometric_enabled": true,
+  "account_ids": ["acc-111", "acc-222"],
+  
+  // Security
+  "ip": "192.168.1.100",
+  "device_id": "device-uuid-999"
+}
+    </pre>
+
+    <h3>6.7.2 Validación del JWT</h3>
+    
+    <ol>
+        <li><strong>Firma válida:</strong> Verificar con clave pública (RS256)</li>
+        <li><strong>No expirado:</strong> exp > current_time</li>
+        <li><strong>Issuer correcto:</strong> iss == expected_issuer</li>
+        <li><strong>Audience correcto:</strong> aud == expected_audience</li>
+        <li><strong>No revocado:</strong> Verificar jti contra Redis (blacklist)</li>
+        <li><strong>Claims requeridos:</strong> Validar roles y permissions</li>
+    </ol>
+</div>
+
+<h2>6.8 Cumplimiento Normativo</h2>
+
+<div class="section">
+    <div class="success">
+        <h3>✓ Requisitos Cubiertos</h3>
+        
+        <p><strong>ISO 27001 - Control A.9 (Access Control):</strong></p>
+        <ul>
+            <li>✓ Autenticación multifactor disponible</li>
+            <li>✓ Políticas de contraseñas robustas</li>
+            <li>✓ Logs de todos los accesos</li>
+            <li>✓ Revocación de acceso implementada</li>
+        </ul>
+
+        <p><strong>PCI DSS Requirement 8:</strong></p>
+        <ul>
+            <li>✓ Identificación única por usuario</li>
+            <li>✓ Autenticación multifactor para acceso remoto</li>
+            <li>✓ Contraseñas cifradas en almacenamiento (bcrypt)</li>
+            <li>✓ Bloqueo tras intentos fallidos</li>
+        </ul>
+
+        <p><strong>GDPR Art. 32 - Security Measures:</strong></p>
+        <ul>
+            <li>✓ Cifrado de datos biométricos</li>
+            <li>✓ Pseudonimización de identificadores</li>
+            <li>✓ Control de acceso basado en roles (RBAC)</li>
+            <li>✓ Notificaciones de actividad sospechosa</li>
+        </ul>
+
+        <p><strong>GLBA - Safeguards Rule:</strong></p>
+        <ul>
+            <li>✓ Autenticación robusta implementada</li>
+            <li>✓ Monitoreo de accesos</li>
+            <li>✓ Protección contra acceso no autorizado</li>
+        </ul>
+    </div>
+</div>
+
+<h2>6.9 Ventajas del Sistema de Autenticación</h2>
+
+<div class="section">
+    <div class="success">
+        <h3>✓ Beneficios Implementados</h3>
+        
+        <ol>
+            <li><strong>Seguridad Robusta:</strong> OAuth 2.0 + PKCE + Biometría + MFA = múltiples capas</li>
+            <li><strong>Excelente UX:</strong> Login biométrico en ~2 segundos</li>
+            <li><strong>Cumplimiento Total:</strong> ISO 27001, PCI DSS, GDPR, GLBA desde el diseño</li>
+            <li><strong>Escalable:</strong> OAuth 2.0 permite agregar nuevos métodos de autenticación</li>
+            <li><strong>Auditable:</strong> Logs completos de todos los accesos y cambios</li>
+            <li><strong>Resiliente:</strong> Múltiples métodos de autenticación como fallback</li>
+            <li><strong>Privacy-First:</strong> Embeddings biométricos cifrados, nunca imágenes completas</li>
+        </ol>
+    </div>
+
+    <div class="note">
+        <strong>Tasa de Adopción Esperada:</strong>
+        <ul>
+            <li>Biometría (Face ID/Touch ID): 70-80% de usuarios</li>
+            <li>Usuario + Contraseña + OTP: 15-20%</li>
+            <li>Usuario + Contraseña: 5-10%</li>
+        </ul>
+    </div>
+</div>
+
+<div class="footer">
+    <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 6 de 17</p>
+</div>
+
+</body>
+</html>

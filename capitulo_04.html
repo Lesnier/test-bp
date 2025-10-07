@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capítulo 4 - Fuentes de Datos y Persistencia (CQRS)</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="nav-header">
+      <h2>Capítulo 4: Fuentes de Datos y Persistencia (CQRS)</h2>
+      <div class="nav-buttons">
+        <a href="capitulo_03.html" class="nav-btn">← Anterior</a>
+        <a href="index.html" class="nav-btn">Índice</a>
+        <a href="capitulo_05.html" class="nav-btn">Siguiente →</a>
+      </div>
+    </div>
+
+    <h1>4. FUENTES DE DATOS Y PERSISTENCIA (PATRÓN CQRS)</h1>
+
+    <h2>4.1 Estrategia de Bases de Datos</h2>
+
+    <div class="section">
+      <p>
+        El sistema utiliza <strong>dos fuentes de datos principales</strong> con
+        estrategia CQRS (Command Query Responsibility Segregation), separando
+        las operaciones de lectura y escritura para optimizar el rendimiento.
+      </p>
+
+      <div class="note">
+        <strong>Principio CQRS:</strong> Separar los modelos de lectura
+        (queries) y escritura (commands) permite optimizar cada uno para su
+        propósito específico, mejorando significativamente el rendimiento del
+        sistema.
+      </div>
+
+      <h3>4.1.1 Base de Datos Core (Escritura)</h3>
+      <ul>
+        <li>
+          <strong>Propósito:</strong> Operaciones transaccionales (CREATE,
+          UPDATE, DELETE)
+        </li>
+        <li><strong>Tecnología:</strong> PostgreSQL 15+</li>
+        <li>
+          <strong>Contenido:</strong> Movimientos financieros, productos,
+          transacciones
+        </li>
+        <li>
+          <strong>Características:</strong> ACID completo, integridad
+          referencial, transacciones complejas
+        </li>
+      </ul>
+
+      <h3>4.1.2 Base de Datos de Lectura (Read Model)</h3>
+      <ul>
+        <li><strong>Propósito:</strong> Consultas optimizadas (SELECT)</li>
+        <li><strong>Tecnología:</strong> MongoDB 7.0+ (NoSQL denormalizada)</li>
+        <li>
+          <strong>Contenido:</strong> Vistas materializadas, históricos
+          denormalizados
+        </li>
+        <li>
+          <strong>Características:</strong> Sin joins, queries ultra-rápidas,
+          agregaciones eficientes
+        </li>
+      </ul>
+
+      <h3>4.1.3 Base de Datos de Detalles de Cliente</h3>
+      <ul>
+        <li>
+          <strong>Propósito:</strong> Información complementaria del cliente
+        </li>
+        <li><strong>Tecnología:</strong> PostgreSQL 15+</li>
+        <li>
+          <strong>Contenido:</strong> Datos personales, preferencias,
+          configuraciones
+        </li>
+      </ul>
+
+      <h3>4.1.4 Base de Datos de Auditoría</h3>
+      <ul>
+        <li><strong>Propósito:</strong> Compliance, logs, trazabilidad</li>
+        <li><strong>Tecnología:</strong> Elasticsearch 8.11+</li>
+        <li>
+          <strong>Contenido:</strong> Todos los eventos del sistema, búsqueda
+          full-text
+        </li>
+      </ul>
+    </div>
+
+    <h2>4.2 Diagrama de Arquitectura CQRS</h2>
+
+    <div class="diagram">
+      <div class="diagram-title">Separación de Lecturas y Escrituras</div>
+      <pre>
+┌─────────────────────────────────────────────────────────┐
+│              CAPA DE APLICACIÓN                          │
+│           (Microservicios GraphQL)                       │
+└────────────┬─────────────────────────┬───────────────────┘
+             │ WRITE (Mutations)       │ READ (Queries)
+             │                         │
+    ┌────────▼────────┐       ┌────────▼─────────┐
+    │  PostgreSQL     │       │   MongoDB        │
+    │  WRITE DB       │       │   READ DB        │
+    │  (Transaccional)│       │   (Optimizada)   │
+    │                 │       │                  │
+    │ - Movimientos   │       │ - Vista Histórico│
+    │ - Productos     │       │ - Agregaciones   │
+    │ - Transacciones │       │ - Búsquedas      │
+    │ - ACID completo │       │ - Denormalizado  │
+    │                 │       │ - Sin Joins      │
+    └────────┬────────┘       └──────────────────┘
+             │                         ▲
+             │ Event Emitted           │
+             └────────┐         ┌──────┘
+                      │         │ Sync (Consistencia Eventual)
+              ┌───────▼─────────▼────────┐
+              │   KAFKA EVENT BUS        │
+              │                          │
+              │  Topic: data.sync        │
+              │  Latencia: 100-500ms     │
+              └──────────────────────────┘
+    </pre
+      >
+    </div>
+
+    <h2>4.3 Consistencia Eventual</h2>
+
+    <div class="section">
+      <div class="justification">
+        <div class="justification-title">
+          Justificación de Consistencia Eventual
+        </div>
+
+        <p>La consistencia eventual es apropiada para este sistema porque:</p>
+
+        <ul>
+          <li>
+            <strong>Mayor disponibilidad del sistema</strong> (Teorema CAP:
+            elegimos AP sobre C)
+          </li>
+          <li>
+            <strong>Escalabilidad horizontal sin bloqueos</strong> entre
+            servicios
+          </li>
+          <li>
+            <strong>Mejor performance en lecturas</strong> (sin joins complejos)
+          </li>
+          <li>
+            <strong>Resiliencia ante fallos de red</strong> entre servicios
+          </li>
+          <li>
+            <strong>Reducción de contención</strong> en la base de datos de
+            escritura
+          </li>
+        </ul>
+      </div>
+
+      <h3>4.3.1 Implementación de la Sincronización</h3>
+
+      <ol>
+        <li>
+          <strong>Escritura en PostgreSQL:</strong> Las escrituras se realizan
+          primero en PostgreSQL con garantías ACID completas
+        </li>
+        <li>
+          <strong>Emisión de evento:</strong> Se emite un evento a Kafka tras
+          cada escritura exitosa
+        </li>
+        <li>
+          <strong>Consumidor escucha:</strong> Un consumidor dedicado escucha el
+          topic data.sync
+        </li>
+        <li>
+          <strong>Actualización de lectura:</strong> El consumidor actualiza la
+          base de lectura (MongoDB)
+        </li>
+        <li><strong>Latencia típica:</strong> 100-500ms de sincronización</li>
+      </ol>
+
+      <h3>4.3.2 Casos de Uso Apropiados</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo de Consulta</th>
+            <th>Base de Datos</th>
+            <th>Justificación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Histórico de movimientos</td>
+            <td>MongoDB (Read)</td>
+            <td>Consistencia eventual aceptable (delay de segundos OK)</td>
+          </tr>
+          <tr>
+            <td>Dashboards y reportes</td>
+            <td>MongoDB (Read)</td>
+            <td>Datos agregados, no requieren tiempo real</td>
+          </tr>
+          <tr>
+            <td>Saldo actual de cuenta</td>
+            <td>PostgreSQL (Write)</td>
+            <td>Requiere consistencia fuerte, lectura directa</td>
+          </tr>
+          <tr>
+            <td>Validación de transferencia</td>
+            <td>PostgreSQL (Write)</td>
+            <td>Operación crítica, requiere ACID</td>
+          </tr>
+          <tr>
+            <td>Búsqueda de transacciones</td>
+            <td>MongoDB (Read)</td>
+            <td>Optimizada para búsquedas complejas</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="success">
+        <strong>Resultado:</strong> 70% de las consultas van a MongoDB (rápidas,
+        sin carga en PostgreSQL), 30% a PostgreSQL (operaciones críticas con
+        consistencia fuerte).
+      </div>
+    </div>
+
+    <h2>4.4 Flujo de Sincronización Detallado</h2>
+
+    <div class="section">
+      <div class="diagram">
+        <div class="diagram-title">Flujo Completo de Sincronización CQRS</div>
+        <pre>
+PASO 1: Usuario realiza transferencia
+    │
+    ▼
+GraphQL Mutation → MS-Pagos
+    │
+    ▼
+PASO 2: Escritura en PostgreSQL (Write DB)
+    │
+    ├─► BEGIN TRANSACTION
+    ├─► INSERT INTO transactions (...)
+    ├─► UPDATE accounts SET balance = balance - amount
+    ├─► COMMIT TRANSACTION ✓
+    │
+    └─► Transacción exitosa (ACID garantizado)
+    │
+    ▼
+PASO 3: Emisión de Evento a Kafka
+    │
+    ├─► Event: {
+    │       type: "TRANSACTION_CREATED",
+    │       transactionId: "txn-12345",
+    │       accountId: "acc-67890",
+    │       amount: 1000,
+    │       timestamp: "2025-10-06T10:30:00Z"
+    │   }
+    │
+    └─► Publicado en topic: data.sync
+    │
+    ▼
+PASO 4: Consumidor procesa evento
+    │
+    ├─► Worker Thread procesa en paralelo
+    ├─► Enriquece datos (agrega info cliente, categoría)
+    │
+    └─► Latencia: 100-300ms
+    │
+    ▼
+PASO 5: Actualización en MongoDB (Read DB)
+    │
+    ├─► db.transactions.insertOne({
+    │       transactionId: "txn-12345",
+    │       accountId: "acc-67890",
+    │       amount: 1000,
+    │       customerName: "Juan Pérez",  // Enriquecido
+    │       category: "Transferencia",    // Enriquecido
+    │       timestamp: "2025-10-06T10:30:00Z"
+    │   })
+    │
+    └─► Actualización en formato denormalizado (sin joins)
+    │
+    ▼
+PASO 6: Dato disponible para consultas rápidas
+    │
+    └─► Consultas desde MongoDB: <20ms
+        (vs 150-200ms si fuera join en PostgreSQL)
+        </pre>
+      </div>
+    </div>
+
+    <h2>4.5 Persistencia para Clientes Frecuentes - Caché con Redis</h2>
+
+    <div class="section">
+      <p>
+        Para optimizar aún más el rendimiento, se implementa una capa de caché
+        con Redis para datos de clientes frecuentes.
+      </p>
+
+      <div class="diagram">
+        <div class="diagram-title">Estrategia de Caché Multi-Nivel</div>
+        <pre>
+┌─────────────────────────────────────────────┐
+│          MS-Datos-Cliente                   │
+└──────────┬──────────────────┬───────────────┘
+           │                  │
+    ┌──────▼──────┐    ┌──────▼────────┐
+    │    Redis    │    │  PostgreSQL   │
+    │   (Cache)   │    │   (Fuente)    │
+    │             │    │               │
+    │ TTL: 1 hora │    │ Datos Cliente │
+    │ LRU eviction│    │ Authoritative │
+    │ Hit rate:70%│    │               │
+    └─────────────┘    └───────────────┘
+
+Flujo de Lectura:
+1. Request → Redis (caché)
+2. Cache HIT (70%) → Respuesta inmediata (2ms)
+3. Cache MISS (30%) → PostgreSQL (50ms) + Guardar en Redis
+        </pre>
+      </div>
+
+      <h3>4.5.1 Estrategia de Caché</h3>
+
+      <ul>
+        <li>
+          <strong>Datos cacheados:</strong> Información de clientes frecuentes
+          (regla 80/20: Top 20% genera 80% del tráfico)
+        </li>
+        <li>
+          <strong>TTL (Time To Live):</strong> 1 hora para balance entre
+          frescura y performance
+        </li>
+        <li>
+          <strong>Política de evicción:</strong> LRU (Least Recently Used)
+        </li>
+        <li>
+          <strong>Invalidación proactiva:</strong> Cuando se actualiza el
+          cliente, se invalida el caché
+        </li>
+        <li><strong>Hit rate objetivo:</strong> >70%</li>
+      </ul>
+
+      <h3>4.5.2 Beneficios Medibles</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            <th>Sin Caché</th>
+            <th>Con Redis</th>
+            <th>Mejora</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Latencia promedio</td>
+            <td>50ms</td>
+            <td>15ms (70% hits a 2ms)</td>
+            <td class="pros">70%</td>
+          </tr>
+          <tr>
+            <td>Queries a PostgreSQL</td>
+            <td>10,000/min</td>
+            <td>3,000/min</td>
+            <td class="pros">70%</td>
+          </tr>
+          <tr>
+            <td>Carga CPU PostgreSQL</td>
+            <td>60%</td>
+            <td>20%</td>
+            <td class="pros">67%</td>
+          </tr>
+          <tr>
+            <td>Throughput (req/seg)</td>
+            <td>500</td>
+            <td>1,500</td>
+            <td class="pros">200%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>4.6 Modelo de Datos</h2>
+
+    <div class="section">
+      <h3>4.6.1 Esquema PostgreSQL (Write DB)</h3>
+
+      <pre>
+-- Tabla de Cuentas
+CREATE TABLE accounts (
+    id UUID PRIMARY KEY,
+    customer_id UUID NOT NULL,
+    account_number VARCHAR(20) UNIQUE NOT NULL,
+    balance DECIMAL(15,2) NOT NULL DEFAULT 0,
+    account_type VARCHAR(20) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Tabla de Transacciones (Write Model)
+CREATE TABLE transactions (
+    id UUID PRIMARY KEY,
+    account_id UUID NOT NULL REFERENCES accounts(id),
+    transaction_type VARCHAR(50) NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    balance_after DECIMAL(15,2) NOT NULL,
+    description TEXT,
+    status VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    idempotency_key VARCHAR(100) UNIQUE
+);
+
+-- Índices optimizados para escritura
+CREATE INDEX idx_transactions_account ON transactions(account_id);
+CREATE INDEX idx_transactions_created ON transactions(created_at DESC);
+    </pre
+      >
+
+      <h3>4.6.2 Esquema MongoDB (Read DB)</h3>
+
+      <pre>
+// Colección de Transacciones (Read Model - Denormalizado)
+{
+  "_id": "txn-12345",
+  "transactionId": "txn-12345",
+  "accountId": "acc-67890",
+  "accountNumber": "1234567890",
+  
+  // Datos denormalizados del cliente
+  "customer": {
+    "id": "cust-111",
+    "name": "Juan Pérez",
+    "email": "juan@example.com"
+  },
+  
+  // Datos de la transacción
+  "type": "TRANSFER_OUT",
+  "amount": 1000.00,
+  "balanceAfter": 48000.00,
+  "description": "Transferencia a cuenta externa",
+  "category": "Transferencia",
+  "status": "COMPLETED",
+  
+  // Metadata enriquecida
+  "timestamp": ISODate("2025-10-06T10:30:00Z"),
+  "tags": ["transfer", "external", "high-amount"],
+  
+  // Índices para búsquedas rápidas
+  "searchableText": "transferencia juan perez 1000"
+}
+
+// Índices optimizados para lectura
+db.transactions.createIndex({ "accountId": 1, "timestamp": -1 })
+db.transactions.createIndex({ "customer.id": 1 })
+db.transactions.createIndex({ "searchableText": "text" })
+    </pre
+      >
+    </div>
+
+    <h2>4.7 Gestión de Réplicas y Alta Disponibilidad</h2>
+
+    <div class="section">
+      <h3>4.7.1 PostgreSQL - Configuración Master-Replica</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Arquitectura de Replicación PostgreSQL</div>
+        <pre>
+┌─────────────┐
+│  Primary    │
+│ (Read+Write)│
+└──────┬──────┘
+       │ Streaming Replication (Asíncrona)
+       ├────────────┬────────────┐
+       │            │            │
+┌──────▼──────┐ ┌───▼──────┐ ┌──▼───────┐
+│  Replica 1  │ │ Replica 2│ │ Replica 3│
+│ (Read-only) │ │(Read-only│ │(Read-only│
+│  Zona AZ-A  │ │ Zona AZ-B│ │ Zona AZ-C│
+└─────────────┘ └──────────┘ └──────────┘
+        </pre>
+      </div>
+
+      <ul>
+        <li>
+          <strong>Replicación asíncrona:</strong> Balance entre performance y
+          durabilidad
+        </li>
+        <li>
+          <strong>Failover automático:</strong> Patroni o Stolon para promoción
+          automática
+        </li>
+        <li>
+          <strong>Backup automático:</strong> Diario + PITR (Point-in-Time
+          Recovery)
+        </li>
+        <li>
+          <strong>Multi-AZ:</strong> Réplicas en diferentes zonas de
+          disponibilidad
+        </li>
+      </ul>
+
+      <h3>4.7.2 MongoDB - Replica Set</h3>
+
+      <ul>
+        <li>
+          <strong>Replica Set de 3 nodos:</strong> 1 Primary + 2 Secondary
+        </li>
+        <li>
+          <strong>Read Preference:</strong> Configurado para leer de secundarios
+          (reduce carga en primary)
+        </li>
+        <li>
+          <strong>Write Concern:</strong> majority (espera confirmación de
+          mayoría)
+        </li>
+        <li>
+          <strong>Elección automática:</strong> Si primary cae, se elige nuevo
+          primary automáticamente
+        </li>
+      </ul>
+    </div>
+
+    <h2>4.8 Estrategia de Backup y Recuperación</h2>
+
+    <div class="section">
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo de Backup</th>
+            <th>Frecuencia</th>
+            <th>Retención</th>
+            <th>RTO</th>
+            <th>RPO</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Full Backup PostgreSQL</strong></td>
+            <td>Semanal (Domingo 2am)</td>
+            <td>3 meses</td>
+            <td>30 min</td>
+            <td>7 días</td>
+          </tr>
+          <tr>
+            <td><strong>Incremental PostgreSQL</strong></td>
+            <td>Diario (2am)</td>
+            <td>30 días</td>
+            <td>20 min</td>
+            <td>1 día</td>
+          </tr>
+          <tr>
+            <td><strong>WAL Logs PostgreSQL</strong></td>
+            <td>Continuo</td>
+            <td>7 días</td>
+            <td>15 min</td>
+            <td>5 min</td>
+          </tr>
+          <tr>
+            <td><strong>MongoDB Snapshot</strong></td>
+            <td>Cada 6 horas</td>
+            <td>48 horas</td>
+            <td>10 min</td>
+            <td>6 horas</td>
+          </tr>
+          <tr>
+            <td><strong>Redis Persistence (RDB)</strong></td>
+            <td>Cada hora</td>
+            <td>24 horas</td>
+            <td>5 min</td>
+            <td>1 hora</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>RTO (Recovery Time Objective):</strong> Tiempo máximo aceptable
+        para recuperar el servicio.<br />
+        <strong>RPO (Recovery Point Objective):</strong> Cantidad máxima
+        aceptable de datos que se pueden perder.
+      </div>
+    </div>
+
+    <h2>4.9 Ventajas del Patrón CQRS Implementado</h2>
+
+    <div class="section">
+      <div class="success">
+        <h3>✓ Beneficios Comprobados</h3>
+        <ol>
+          <li>
+            <strong>Performance de Lectura:</strong> Queries 5-10x más rápidas
+            (sin joins, datos denormalizados)
+          </li>
+          <li>
+            <strong>Escalabilidad Independiente:</strong> Escalar lectura y
+            escritura por separado según necesidad
+          </li>
+          <li>
+            <strong>Optimización Específica:</strong> PostgreSQL para
+            transacciones ACID, MongoDB para consultas complejas
+          </li>
+          <li>
+            <strong>Menor Contención:</strong> Lecturas no bloquean escrituras
+          </li>
+          <li>
+            <strong>Flexibilidad de Schema:</strong> Read model puede tener
+            múltiples vistas sin afectar write model
+          </li>
+          <li>
+            <strong>Reducción de Carga:</strong> 70% de queries van a MongoDB,
+            liberando PostgreSQL para transacciones
+          </li>
+        </ol>
+      </div>
+
+      <div class="warning">
+        <h3>⚠️ Consideraciones Importantes</h3>
+        <ul>
+          <li>
+            <strong>Complejidad:</strong> Mayor complejidad operacional (2 bases
+            de datos a mantener)
+          </li>
+          <li>
+            <strong>Consistencia Eventual:</strong> Los clientes deben entender
+            delays de 100-500ms
+          </li>
+          <li>
+            <strong>Sincronización:</strong> Kafka debe estar siempre disponible
+          </li>
+          <li>
+            <strong>Debugging:</strong> Más difícil debuggear problemas de
+            sincronización
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 4 de 17</p>
+    </div>
+  </body>
+</html>

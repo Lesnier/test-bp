@@ -1,0 +1,85 @@
+Features del usuarios
+---------------------
+
+- Histórico de Movimientos (Micro de Historicos) Base de dato de escritura y una de lectura y sincronizar con consistencia eventual patron CQRS gestionadas con  
+- Realizar transferencias propio banco(Micro de PagosTransferenciaPropiaBanca)
+- Realizar transferencias Interbancarias ( Micro PagoTransferenciasInterbancaria)
+- Consulta de datos basicos (Microservicio)
+- Propongo crear un microservicio de auditoria para generar eventos de auditoria + contenedor para grafana + prometheus (para reglas de borrado y retención) Usar GraphQL ->procesador de eventos -> guarda Logs
+									-> Explorador de metricas	
+- Micro Autenticacion	
+-Microservicio de Notificaciones
+-Microservicios subida y descarga de archivos	
+-API-Gateway en GraphQL con Apollo															
+
+Fuentes de datos
+-----------------
+- Base de datos core con Data Principal del cliente (Movimientos, Productos)
+- Base de datos para Detalles de Cliente
+El sistema usa una base de dato de Auditoria que registra las acciones logs, y cuenta con mecanismos de persistencia para clietnes frecuentes. Propongo un diseño que relaciones los compoenentes que deberia interactuar para conseguir este objetivo.
+
+Mensajeria y Notificaciones
+-----------------------------
+Se requiere qu eel sistema utilice sistemas exterbnos o internos para notificaciones
+Propongo:
+Utilizan workers para multithreading (Futuro escalamiento vertical para ussar todos los CPU) + colas de redis para jobs para despacho asyncrono de notificaciones.
+- Firebase para envios de SMS (Economico y seguro)
+- Mailpit en contenedor como servidor de correo para desarrollo. Para produccion usar nodemailer(No usar amazon para evitar costos adicionales)
+
+FrontEnd
+-------------
+- SPA 
+- APP Móvil
+
+Se quiere hacer en un framework multiplataforma y se solicita proponer 2 opciones y justificar el porque y la elección.
+Proponer 3 Variantes:
+- ReactNative (Maduro, +10 años en el mercado, muchos paquetes, comunidad grande, basado en Javascript y es el staff principal de las empresa: evaular, platafroma bridge, convierte componentes de js en nativos de android. )
+- Flutter (Maduro, tiene una gran comunidad, pero implica contratar personal en dart)
+- Kotlin Multiplatform (Innovador pero Lleva solo 4 años en el mercado, una comunidad aun pequeña, pocos paquetes)
+
+Authenticacion:
+-----------------
+Proponer el mejor flujo de autenticacion basado en OAuth2.0. La compañia ya tienes un servicio para OAuth2
+
+Otros Features de Autenticacion de la APP
+------------------
+-Reconocimiento Facial (Tenerlo en cuenta en el flujo de autenticacion y autenticacion)
+-Después del registro el usuario puede entrar con credenciales, huella digital, y otros metodos. Especificarlo en la arquitectura
+Debo recomendar otras herramientas de autenticacion y autorizacion o sensores.
+
+Para seguridad
+--------------
+Propongo usar un WAF (web applicaciont firewall)
+Propongo usar Capa de Middleware
+Propongo usar un VAULT secret manager
+Protocolos HTTPS con proxy inverso para balancear las peticiones si un certificado se vence
+Implementar politicas de seguridad
+
+Implementar Kubernete, puede ser en cualqeuyira de los siguientes (Openshif/EKS/AKS/GKE/)
+----------------------
+Contratar 2 nodos para producción en cada nodo tener 3 pods con replicas de los servicios con configuracion de autoescalado vertical y balanceo automático de carga entre instancias con algoritmo de balanceo más conveniente. El autoescalado automatico ayuda a reducir costos.
+Implementar HealthChecking con ELK stack (Elasticsearch, Logstash, Kibana) para monitoreo de contenedores o utilizar las herramientas del cloud.
+Contratar 2 nodos  para pre-producción
+Contratar 1 nodo para desarrollo que va a tener dos POD, uno para desarrollo y otro para QA fraccionando los recursos a la mitad para cada ambiente.
+Configurar varios docker-compose para grupos de servicios.
+Utilizar kafka para bus de mensajeria, junto a zookeeper para configuracion de clusters y replicacion.
+
+
+Elementos normativos
+----------------
+ISO 27001 seguridad de la informacion
+ISO 9001 gestion de la calidad
+ISO 27002 Guia para la seguridad de la infromacion
+ISO 27701 SGPI Sistema de Gestion de la Privacidad
+RGPD privacidad de datos Europa (Ley privasidad de datos en Europa)
+GLBA de EEUU para finanzas
+Normas PCI DSS programa de seguridad par aproteccion de datos de tarjetas.
+
+
+
+
+
+
+ 
+
+

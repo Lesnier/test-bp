@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Propuesta de Arquitectura - Sistema Bancario BP</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .cover {
+        text-align: center;
+        padding: 100px 20px;
+        min-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background: linear-gradient(90deg, #76b9fc 0%, #004999 100%);
+        color: white;
+        margin: -20px -20px 40px -20px;
+        border-radius: 0 0 20px 20px;
+      }
+      .cover h1 {
+        color: white;
+        border: none;
+        margin: 0;
+        font-size: 3.5em;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+      .cover .subtitle {
+        font-size: 2em;
+        margin: 30px 0;
+        opacity: 0.95;
+      }
+      .cover .entity {
+        font-size: 1.8em;
+        margin: 40px 0;
+        font-weight: 600;
+      }
+      .cover .meta {
+        margin-top: 60px;
+        font-size: 1.2em;
+        opacity: 0.9;
+      }
+      .cover .meta p {
+        margin: 10px 0;
+        text-align: center;
+      }
+      .cover .meta p strong {
+        color: white;
+      }
+      .highlights {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin: 40px 0;
+      }
+      .highlight-card {
+        background: #f8f9fa;
+        padding: 25px;
+        border-radius: 10px;
+        border-left: 5px solid #0066cc;
+        transition: transform 0.3s, box-shadow 0.3s;
+      }
+      .highlight-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      }
+      .highlight-card h3 {
+        color: #0066cc;
+        margin-top: 0;
+        font-size: 1.3em;
+      }
+      .start-button {
+        display: inline-block;
+        background: #0066cc;
+        color: white;
+        padding: 20px 50px;
+        font-size: 1.3em;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: 600;
+        transition: all 0.3s;
+        box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
+      }
+      .start-button:hover {
+        background: #004999;
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 102, 204, 0.4);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="cover">
+      <h1>Propuesta de Arquitectura</h1>
+      <div class="subtitle">Sistema Bancario Digital</div>
+      <div class="entity">Entidad Bancaria: BP</div>
+      <div class="meta">
+        <p><strong>Documento Técnico-Ejecutivo</strong></p>
+        <p>Arquitectura de Soluciones Cloud-Native</p>
+        <p>Autor: Lesnier González López</p>
+        <p style="margin-top: 30px; font-size: 1.1em">Octubre 2025</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 style="text-align: center; color: #0066cc; font-size: 2em">
+        Innovaciones Clave de la Propuesta
+      </h2>
+
+      <div class="highlights">
+        <div class="highlight-card">
+          <h3>💡 GraphQL First (95%)</h3>
+          <p>
+            Reducción de <strong>60-70%</strong> en latencia vs REST. Eficiencia
+            máxima en transferencia de datos para aplicaciones móviles.
+          </p>
+        </div>
+
+        <div class="highlight-card">
+          <h3>⚡ Node.js + Worker Threads</h3>
+          <p>
+            Multithreading real con mejora de <strong>300%</strong> en
+            procesamiento paralelo. Escalabilidad vertical + horizontal.
+          </p>
+        </div>
+
+        <div class="highlight-card">
+          <h3>🔄 Patrón SAGA</h3>
+          <p>
+            Transacciones distribuidas con compensación automática. Estado en
+            Redis para debugging y performance.
+          </p>
+        </div>
+
+        <div class="highlight-card">
+          <h3>🛡️ Resiliencia Integral</h3>
+          <p>
+            Sistema con
+            <strong>Resistencia + Adaptación + Recuperación</strong>.
+            Auto-healing y 99.9% uptime garantizado.
+          </p>
+        </div>
+
+        <div class="highlight-card">
+          <h3>📊 CQRS Optimizado</h3>
+          <p>
+            Separación lectura/escritura con consistencia eventual &lt;500ms.
+            Performance óptima en consultas masivas.
+          </p>
+        </div>
+
+        <div class="highlight-card">
+          <h3>🔐 Seguridad Multicapa</h3>
+          <p>
+            WAF + API Gateway + OAuth 2.0 + Biometría. Defense in Depth con 5
+            capas de protección.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="toc">
+      <h1>Tabla de Contenidos</h1>
+
+      <ul>
+        <li><a href="capitulo_01.html">1. Resumen Ejecutivo</a></li>
+
+        <li>
+          <a href="capitulo_02.html">2. Arquitectura General del Sistema</a>
+        </li>
+
+        <li>
+          <a href="capitulo_03.html">3. Arquitectura de Microservicios</a>
+          <ul class="sub-items">
+            <li>3.1 Microservicios Principales</li>
+            <li>3.2 Justificación de Node.js con Worker Threads</li>
+            <li>3.3 GraphQL como Estándar de APIs (95%)</li>
+            <li>3.4 Diagrama de Componentes</li>
+            <li>3.5 Patrón SAGA para Transacciones Distribuidas</li>
+            <li>3.6 Justificación Técnica Consolidada</li>
+          </ul>
+        </li>
+
+        <li>
+          <a href="capitulo_04.html"
+            >4. Fuentes de Datos y Persistencia (CQRS)</a
+          >
+        </li>
+
+        <li>
+          <a href="capitulo_05.html">5. Sistema de Auditoría con GraphQL</a>
+        </li>
+
+        <li>
+          <a href="capitulo_06.html">6. Autenticación OAuth 2.0 y Biometría</a>
+        </li>
+
+        <li>
+          <a href="capitulo_07.html"
+            >7. Sistema de Mensajería y Notificaciones</a
+          >
+        </li>
+
+        <li>
+          <a href="capitulo_08.html"
+            >8. Arquitectura Frontend Multiplataforma</a
+          >
+        </li>
+
+        <li>
+          <a href="capitulo_09.html">9. Infraestructura Cloud y Kubernetes</a>
+        </li>
+
+        <li>
+          <a href="capitulo_10.html">10. Estrategia de Seguridad Integral</a>
+        </li>
+
+        <li>
+          <a href="capitulo_11.html">11. Alta Disponibilidad y Resiliencia</a>
+          <ul class="sub-items">
+            <li>11.1 Objetivos de Disponibilidad (SLA)</li>
+            <li>11.2 Estrategias de Alta Disponibilidad</li>
+            <li>11.3 Disaster Recovery</li>
+            <li>11.4 Monitoreo y Alertas</li>
+            <li>
+              11.5 Resiliencia del Sistema (Resistencia, Adaptación,
+              Recuperación)
+            </li>
+          </ul>
+        </li>
+
+        <li><a href="capitulo_12.html">12. Cumplimiento Normativo</a></li>
+
+        <li>
+          <a href="capitulo_13.html">13. Gestión de Costos y Escalabilidad</a>
+        </li>
+
+        <li>
+          <a href="capitulo_14.html">14. Diagramas de Integración y Flujos</a>
+        </li>
+
+        <li><a href="capitulo_15.html">15. Consideraciones Adicionales</a></li>
+
+        <li>
+          <a href="capitulo_16.html">16. Conclusiones y Recomendaciones</a>
+        </li>
+
+        <li><a href="capitulo_17.html">17. Anexos</a></li>
+      </ul>
+    </div>
+
+    <div style="text-align: center; margin: 60px 0">
+      <a href="capitulo-01.html" class="start-button"> Comenzar Lectura → </a>
+    </div>
+
+    <div class="footer" style="margin-top: 80px">
+      <p><strong>Preparado por:</strong> Arquitecto de Soluciones</p>
+      <p><strong>Para:</strong> Entidad Bancaria BP</p>
+      <p style="margin-top: 20px; font-size: 0.9em; color: #999">
+        Documento Confidencial - Solo para uso interno
+      </p>
+      <p
+        style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd"
+      >
+        <strong>Estructura del Documento:</strong> 17 Capítulos | ~65 Páginas |
+        18,000+ palabras<br />
+        <strong>Tecnologías Principales:</strong> Node.js, GraphQL, Kubernetes,
+        React Native, SAGA, CQRS
+      </p>
+    </div>
+  </body>
+</html>
