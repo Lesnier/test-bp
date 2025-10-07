@@ -11,9 +11,9 @@
 <div class="nav-header">
     <h2>Capítulo 11: Alta Disponibilidad y Resiliencia del Sistema</h2>
     <div class="nav-buttons">
-        <a href="capitulo-10.html" class="nav-btn">← Anterior</a>
+        <a href="capitulo_10.html" class="nav-btn">← Anterior</a>
         <a href="index.html" class="nav-btn">Índice</a>
-        <a href="capitulo-12.html" class="nav-btn">Siguiente →</a>
+        <a href="capitulo_12.html" class="nav-btn">Siguiente →</a>
     </div>
 </div>
 
@@ -107,7 +107,7 @@ Failover Automático:
 3. Elige nueva Primary (Replica con menos lag)
 4. Promoción automática (10 segundos)
 5. Actualiza DNS/Endpoints
-6. Total: < 20 segundos de interrupción
+6. Total: &lt; 20 segundos de interrupción
         </pre>
     </div>
 
@@ -373,25 +373,25 @@ cuando múltiples clientes reintentan simultáneamente
         </thead>
         <tbody>
             <tr>
-                <td>CPU > 80%</td>
+                <td>CPU &gt; 80%</td>
                 <td>5 min consecutivos</td>
                 <td>Escalar pods automáticamente</td>
                 <td>Slack + Email</td>
             </tr>
             <tr>
-                <td>Error Rate > 1%</td>
+                <td>Error Rate &gt; 1%</td>
                 <td>2 minutos</td>
                 <td>Investigación inmediata</td>
                 <td>PagerDuty</td>
             </tr>
             <tr>
-                <td>Latencia > 500ms</td>
+                <td>Latencia &gt; 500ms</td>
                 <td>p95 por 3 min</td>
                 <td>Revisar cuellos de botella</td>
                 <td>Slack</td>
             </tr>
             <tr>
-                <td>Disco > 85%</td>
+                <td>Disco &gt; 85%</td>
                 <td>Instantáneo</td>
                 <td>Limpiar logs antiguos</td>
                 <td>Email</td>
@@ -700,4 +700,13 @@ Ahorro: 50-60% en costos vs aprovisionar para pico
 
     <div class="success">
         <strong>Resultado Esperado:</strong><br>
-        Un sistema bancario que <strong>nunca falla completamente</strong>, se <strong>adap
+        Un sistema bancario que <strong>nunca falla completamente</strong>, se <strong>adapta a la demanda</strong> automáticamente y se <strong>auto-recupera de fallos</strong> en segundos, manteniendo 99.9% uptime garantizado.
+    </div>
+</div>
+
+<div class="footer">
+    <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 11 de 17</p>
+</div>
+
+</body>
+</html>
