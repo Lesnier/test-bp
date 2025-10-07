@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 8 - Arquitectura Frontend Multiplataforma</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="nav-header">
+    <h2>Capítulo 8: Arquitectura Frontend Multiplataforma</h2>
+    <div class="nav-buttons">
+        <a href="capitulo_07.html" class="nav-btn">← Anterior</a>
+        <a href="index.html" class="nav-btn">Índice</a>
+        <a href="capitulo_09.html" class="nav-btn">Siguiente →</a>
+    </div>
+</div>
+
+<h1>8. ARQUITECTURA FRONTEND MULTIPLATAFORMA</h1>
+
+<h2>8.1 Requisitos del Sistema Frontend</h2>
+
+<div class="section">
+    <p>El sistema requiere <strong>dos aplicaciones en el frontend:</strong></p>
+
+    <ul>
+        <li><strong>SPA (Single Page Application):</strong> Aplicación web para navegadores</li>
+        <li><strong>App Móvil:</strong> Aplicación nativa para iOS y Android</li>
+    </ul>
+
+    <div class="note">
+        <strong>Requisito del Cliente:</strong> Desarrollar en un framework multiplataforma con justificación técnica. Se solicitan <strong>3 opciones evaluadas</strong> con recomendación final.
+    </div>
+</div>
+
+<h2>8.2 Análisis Comparativo de Frameworks</h2>
+
+<div class="section">
+    <h3>8.2.1 Opciones Evaluadas</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Criterio</th>
+                <th>React Native</th>
+                <th>Flutter</th>
+                <th>Kotlin Multiplatform</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Madurez</strong></td>
+                <td class="pros">10+ años (2015)</td>
+                <td class="pros">7 años (2018)</td>
+                <td class="cons">4 años (2020)</td>
+            </tr>
+            <tr>
+                <td><strong>Comunidad</strong></td>
+                <td class="pros">Muy Grande (118K+ stars)</td>
+                <td class="pros">Grande (165K+ stars)</td>
+                <td class="cons">Pequeña (7.8K+ stars)</td>
+            </tr>
+            <tr>
+                <td><strong>Lenguaje</strong></td>
+                <td class="pros">JavaScript/TypeScript</td>
+                <td>Dart</td>
+                <td>Kotlin</td>
+            </tr>
+            <tr>
+                <td><strong>Curva de Aprendizaje</strong></td>
+                <td class="pros">Baja (JS conocido)</td>
+                <td>Media (Dart nuevo)</td>
+                <td class="cons">Media-Alta</td>
+            </tr>
+            <tr>
+                <td><strong>Performance</strong></td>
+                <td>Buena (bridge nativo)</td>
+                <td class="pros">Excelente (compiled)</td>
+                <td class="pros">Excelente (nativo)</td>
+            </tr>
+            <tr>
+                <td><strong>Paquetes Disponibles</strong></td>
+                <td class="pros">50,000+</td>
+                <td class="pros">30,000+</td>
+                <td class="cons">5,000+</td>
+            </tr>
+            <tr>
+                <td><strong>Empresas que lo Usan</strong></td>
+                <td class="pros">Meta, Uber, Airbnb, Microsoft</td>
+                <td class="pros">Google, Alibaba, BMW</td>
+                <td>JetBrains, Netflix, VMware</td>
+            </tr>
+            <tr>
+                <td><strong>Hot Reload</strong></td>
+                <td class="pros">✓ Sí</td>
+                <td class="pros">✓ Sí (ultra rápido)</td>
+                <td>✓ Sí (limitado)</td>
+            </tr>
+            <tr>
+                <td><strong>Acceso APIs Nativas</strong></td>
+                <td>Mediante bridge</td>
+                <td>Via Platform Channels</td>
+                <td class="pros">Directo (expect/actual)</td>
+            </tr>
+            <tr>
+                <td><strong>Tamaño de App</strong></td>
+                <td>25-30 MB</td>
+                <td class="pros">15-20 MB</td>
+                <td class="pros">10-15 MB</td>
+            </tr>
+            <tr>
+                <td><strong>Tiempo de Desarrollo</strong></td>
+                <td class="pros">Rápido</td>
+                <td class="pros">Rápido</td>
+                <td>Medio</td>
+            </tr>
+            <tr>
+                <td><strong>Costo de Contratación</strong></td>
+                <td class="pros">Bajo (devs JS abundantes)</td>
+                <td>Medio (devs Dart escasos)</td>
+                <td class="cons">Alto (devs Kotlin especializados)</td>
+            </tr>
+            <tr>
+                <td><strong>UI/UX</strong></td>
+                <td>Componentes nativos</td>
+                <td class="pros">Material + Cupertino consistente</td>
+                <td class="pros">Totalmente nativo</td>
+            </tr>
+            <tr>
+                <td><strong>Ideal Para</strong></td>
+                <td class="pros">Equipos JS, MVP rápido</td>
+                <td>Apps visuales, UI consistente</td>
+                <td>Apps nativas complejas</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.3 Análisis FODA por Framework</h2>
+
+<div class="section">
+    <h3>8.3.1 React Native</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fortalezas</th>
+                <th>Debilidades</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <ul>
+                        <li>Stack JavaScript compartido con SPA web</li>
+                        <li>Reutilización de código entre web y móvil</li>
+                        <li>Enorme ecosistema de paquetes</li>
+                        <li>Gran comunidad y documentación</li>
+                        <li>Fácil contratación de desarrolladores</li>
+                        <li>Tiempo de desarrollo rápido</li>
+                        <li>Nueva arquitectura Fabric mejora performance</li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li>Performance inferior a Flutter/Kotlin en animaciones complejas</li>
+                        <li>Dependencia de bridge JavaScript-nativo (overhead)</li>
+                        <li>Actualizaciones pueden romper compatibilidad</li>
+                        <li>Tamaño de app más grande</li>
+                        <li>Requiere código nativo ocasionalmente</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Oportunidades</th>
+                <th>Amenazas</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <ul>
+                        <li>Nueva arquitectura Fabric + TurboModules mejora performance</li>
+                        <li>Expo facilita desarrollo y despliegues OTA</li>
+                        <li>React Native Web para convergencia total</li>
+                        <li>Hermes engine optimizado para móvil</li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li>Meta podría reducir inversión en el proyecto</li>
+                        <li>Flutter ganando cuota de mercado</li>
+                        <li>Fragmentación de versiones</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>8.3.2 Flutter</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fortalezas</th>
+                <th>Debilidades</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <ul>
+                        <li>Excelente performance (compilado a código nativo)</li>
+                        <li>UI consistente entre plataformas</li>
+                        <li>Hot reload extremadamente rápido</li>
+                        <li>Respaldado por Google</li>
+                        <li>Widget-based arquitectura flexible</li>
+                        <li>Ideal para apps con animaciones complejas</li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li>Requiere aprender Dart (menos común que JS)</li>
+                        <li>Contratar talento Dart es más costoso</li>
+                        <li>Tamaño de runtime incluido en la app</li>
+                        <li>Menor integración con ecosistema web</li>
+                        <li>No reutiliza código con SPA web</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Oportunidades</th>
+                <th>Amenazas</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <ul>
+                        <li>Flutter Web y Desktop en crecimiento</li>
+                        <li>Google invierte fuertemente en el proyecto</li>
+                        <li>Crecimiento rápido de la comunidad</li>
+                        <li>Adopción en empresas grandes</li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li>Menor adopción que React Native en fintech</li>
+                        <li>Dependencia total de Google</li>
+                        <li>Ecosistema web menos maduro</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>8.3.3 Kotlin Multiplatform</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fortalezas</th>
+                <th>Debilidades</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <ul>
+                        <li>Performance nativa real (no bridge)</li>
+                        <li>Acceso completo a APIs nativas</li>
+                        <li>Tamaño de app más pequeño</li>
+                        <li>Código compartido solo para lógica de negocio</li>
+                        <li>UI totalmente nativa (mejor UX)</li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li>Tecnología muy joven (solo 4 años estable)</li>
+                        <li>Comunidad pequeña, pocos paquetes</li>
+                        <li>Requiere devs especializados en Kotlin (costoso)</li>
+                        <li>Curva de aprendizaje pronunciada</li>
+                        <li>Menor cantidad de recursos y tutoriales</li>
+                        <li>No hay reutilización con código web</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Oportunidades</th>
+                <th>Amenazas</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <ul>
+                        <li>JetBrains invirtiendo fuertemente</li>
+                        <li>Adoptado por empresas grandes</li>
+                        <li>Futuro prometedor en enterprise</li>
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        <li>Puede no alcanzar masa crítica de adopción</li>
+                        <li>Riesgo de fragmentación del ecosistema</li>
+                        <li>Herramientas menos maduras</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.4 Recomendación Final: REACT NATIVE</h2>
+
+<div class="section">
+    <div class="justification">
+        <div class="justification-title">🏆 Decisión Arquitectónica: React Native</div>
+        
+        <p>Para el proyecto bancario BP, se recomienda <strong>React Native</strong> por las siguientes razones estratégicas:</p>
+    </div>
+
+    <h3>8.4.1 Justificación de la Elección</h3>
+
+    <h4>1. Stack Técnico Actual del Equipo</h4>
+    <p>El documento menciona que <strong>JavaScript es el lenguaje principal del equipo</strong>. React Native permite:</p>
+    <ul>
+        <li>Máxima reutilización de conocimiento y código</li>
+        <li>Sin curva de aprendizaje adicional significativa</li>
+        <li>Aprovechamiento de skills existentes en React.js</li>
+    </ul>
+
+    <h4>2. Reutilización de Código con SPA Web</h4>
+    
+    <div class="diagram">
+        <div class="diagram-title">Arquitectura de Código Compartido</div>
+        <pre>
+┌─────────────────────────────────────────────────────────┐
+│              SHARED BUSINESS LOGIC                      │
+│           (NPM Package / Monorepo)                      │
+│                                                         │
+│  • Validación de formularios                           │
+│  • Formateo de datos (montos, fechas, cuentas)        │
+│  • Utilidades comunes                                  │
+│  • Constantes y tipos TypeScript                       │
+│  • Lógica de negocio (cálculos, reglas)               │
+│  • GraphQL queries y mutations                         │
+│                                                         │
+└──────────────┬──────────────────────────┬───────────────┘
+               │                          │
+       ┌───────▼────────┐        ┌───────▼────────┐
+       │   SPA WEB      │        │   APP MÓVIL    │
+       │  (React.js)    │        │ (React Native) │
+       │                │        │                │
+       │ • React Router │        │ • React Nav    │
+       │ • Tailwind CSS │        │ • Native Base  │
+       │ • Web APIs     │        │ • Native APIs  │
+       └────────────────┘        └────────────────┘
+
+<strong>Reutilización estimada: 60-70% del código</strong>
+        </pre>
+    </div>
+
+    <h4>3. Time-to-Market</h4>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Aspecto</th>
+                <th>React Native</th>
+                <th>Flutter</th>
+                <th>Kotlin MP</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Desarrollo MVP</strong></td>
+                <td class="pros">3-4 meses</td>
+                <td>4-5 meses</td>
+                <td class="cons">6-8 meses</td>
+            </tr>
+            <tr>
+                <td><strong>Onboarding de Devs</strong></td>
+                <td class="pros">1 semana</td>
+                <td>3-4 semanas</td>
+                <td class="cons">6-8 semanas</td>
+            </tr>
+            <tr>
+                <td><strong>Prototipado</strong></td>
+                <td class="pros">Muy rápido</td>
+                <td>Rápido</td>
+                <td>Lento</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>4. Ecosistema y Madurez</h4>
+    
+    <ul>
+        <li><strong>Librerías probadas para fintech:</strong> Plaid, Stripe integrations</li>
+        <li><strong>Componentes de seguridad maduros:</strong> react-native-biometrics, react-native-keychain</li>
+        <li><strong>Soluciones existentes:</strong> Para problemas comunes ya resueltos por la comunidad</li>
+        <li><strong>Herramientas de desarrollo:</strong> Flipper, Reactotron para debugging</li>
+    </ul>
+
+    <h4>5. Costo de Contratación</h4>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Perfil</th>
+                <th>Disponibilidad</th>
+                <th>Salario Promedio (USD/año)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>React Native Developer</strong></td>
+                <td class="pros">Alta (abundantes)</td>
+                <td class="pros">$60,000 - $90,000</td>
+            </tr>
+            <tr>
+                <td><strong>Flutter Developer</strong></td>
+                <td>Media (escasos)</td>
+                <td>$70,000 - $100,000</td>
+            </tr>
+            <tr>
+                <td><strong>Kotlin MP Developer</strong></td>
+                <td class="cons">Baja (muy escasos)</td>
+                <td class="cons">$85,000 - $120,000</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>6. Casos de Éxito en Banca y Fintech</h4>
+    
+    <ul>
+        <li><strong>Bloomberg:</strong> App móvil en React Native</li>
+        <li><strong>Coinbase:</strong> Exchange de criptomonedas</li>
+        <li><strong>Walmart:</strong> App de pagos y e-commerce</li>
+        <li><strong>Discord:</strong> App de comunicaciones (similitudes con notificaciones)</li>
+    </ul>
+
+    <h3>8.4.2 Comparativa de Costos Totales (3 años)</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Concepto</th>
+                <th>React Native</th>
+                <th>Flutter</th>
+                <th>Kotlin MP</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Desarrollo Inicial</strong></td>
+                <td class="pros">$120,000</td>
+                <td>$150,000</td>
+                <td class="cons">$200,000</td>
+            </tr>
+            <tr>
+                <td><strong>Salarios Team (3 años)</strong></td>
+                <td class="pros">$540,000</td>
+                <td>$630,000</td>
+                <td class="cons">$810,000</td>
+            </tr>
+            <tr>
+                <td><strong>Mantenimiento</strong></td>
+                <td class="pros">$90,000</td>
+                <td>$100,000</td>
+                <td class="cons">$120,000</td>
+            </tr>
+            <tr>
+                <td><strong>Capacitación</strong></td>
+                <td class="pros">$10,000</td>
+                <td>$30,000</td>
+                <td class="cons">$60,000</td>
+            </tr>
+            <tr>
+                <td><strong>TOTAL 3 AÑOS</strong></td>
+                <td class="pros">$760,000</td>
+                <td>$910,000</td>
+                <td class="cons">$1,190,000</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="success">
+        <strong>Ahorro con React Native:</strong> $150,000 vs Flutter y $430,000 vs Kotlin MP en 3 años
+    </div>
+</div>
+
+<h2>8.5 Stack Tecnológico Propuesto</h2>
+
+<div class="section">
+    <h3>8.5.1 Aplicación Móvil (React Native)</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Componente</th>
+                <th>Tecnología</th>
+                <th>Justificación</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Framework Base</strong></td>
+                <td>React Native 0.73+</td>
+                <td>Última versión estable con nueva arquitectura Fabric</td>
+            </tr>
+            <tr>
+                <td><strong>Navegación</strong></td>
+                <td>React Navigation 6</td>
+                <td>Estándar de facto, APIs declarativas, TypeScript support</td>
+            </tr>
+            <tr>
+                <td><strong>Estado Global</strong></td>
+                <td>Redux Toolkit + RTK Query</td>
+                <td>Gestión de estado predecible + data fetching optimizado</td>
+            </tr>
+            <tr>
+                <td><strong>GraphQL Client</strong></td>
+                <td>Apollo Client</td>
+                <td>Caché inteligente, subscriptions, integración React hooks</td>
+            </tr>
+            <tr>
+                <td><strong>UI Components</strong></td>
+                <td>NativeBase o React Native Paper</td>
+                <td>Componentes accesibles y bien diseñados</td>
+            </tr>
+            <tr>
+                <td><strong>Biometría</strong></td>
+                <td>react-native-biometrics</td>
+                <td>Soporte Face ID, Touch ID, fingerprint</td>
+            </tr>
+            <tr>
+                <td><strong>Almacenamiento Seguro</strong></td>
+                <td>react-native-keychain</td>
+                <td>Keychain (iOS) / Keystore (Android) para tokens</td>
+            </tr>
+            <tr>
+                <td><strong>Push Notifications</strong></td>
+                <td>@react-native-firebase/messaging</td>
+                <td>Integración con Firebase Cloud Messaging</td>
+            </tr>
+            <tr>
+                <td><strong>Analytics</strong></td>
+                <td>Firebase Analytics</td>
+                <td>Tracking de eventos, funnels, retención</td>
+            </tr>
+            <tr>
+                <td><strong>Crash Reporting</strong></td>
+                <td>Sentry</td>
+                <td>Error tracking en producción con source maps</td>
+            </tr>
+            <tr>
+                <td><strong>Testing</strong></td>
+                <td>Jest + React Native Testing Library</td>
+                <td>Unit + integration tests con mocking robusto</td>
+            </tr>
+            <tr>
+                <td><strong>E2E Testing</strong></td>
+                <td>Detox</td>
+                <td>Tests end-to-end en dispositivos reales/emuladores</td>
+            </tr>
+            <tr>
+                <td><strong>Code Quality</strong></td>
+                <td>ESLint + Prettier + TypeScript</td>
+                <td>Linting, formateo automático, type safety</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>8.5.2 Aplicación Web (SPA)</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Componente</th>
+                <th>Tecnología</th>
+                <th>Justificación</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Framework Base</strong></td>
+                <td>React.js 18+</td>
+                <td>Mismo ecosistema que móvil, concurrent rendering</td>
+            </tr>
+            <tr>
+                <td><strong>Navegación</strong></td>
+                <td>React Router 6</td>
+                <td>Routing declarativo con data loading</td>
+            </tr>
+            <tr>
+                <td><strong>Estado Global</strong></td>
+                <td>Redux Toolkit + RTK Query</td>
+                <td>Mismo stack que móvil = reutilización</td>
+            </tr>
+            <tr>
+                <td><strong>GraphQL Client</strong></td>
+                <td>Apollo Client</td>
+                <td>Mismo que móvil = reutilización de queries</td>
+            </tr>
+            <tr>
+                <td><strong>UI Framework</strong></td>
+                <td>Tailwind CSS + Headless UI</td>
+                <td>Utility-first CSS, componentes accesibles</td>
+            </tr>
+            <tr>
+                <td><strong>Build Tool</strong></td>
+                <td>Vite</td>
+                <td>Build ultra-rápido, HMR instantáneo</td>
+            </tr>
+            <tr>
+                <td><strong>Testing</strong></td>
+                <td>Vitest + React Testing Library</td>
+                <td>Tests rápidos con misma API que Jest</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.6 Arquitectura de la Aplicación Móvil</h2>
+
+<div class="section">
+    <h3>8.6.1 Estructura de Carpetas</h3>
+
+    <div class="diagram">
+        <div class="diagram-title">Organización del Código</div>
+        <pre>
+mobile-app/
+├── src/
+│   ├── components/        # Componentes reutilizables
+│   │   ├── Button.tsx
+│   │   ├── Input.tsx
+│   │   ├── Card.tsx
+│   │   └── AccountCard.tsx
+│   │
+│   ├── screens/          # Pantallas de la app
+│   │   ├── Auth/
+│   │   │   ├── LoginScreen.tsx
+│   │   │   ├── RegisterScreen.tsx
+│   │   │   └── BiometricSetupScreen.tsx
+│   │   ├── Home/
+│   │   │   ├── HomeScreen.tsx
+│   │   │   └── AccountDetailScreen.tsx
+│   │   ├── Transfers/
+│   │   │   ├── TransferScreen.tsx
+│   │   │   └── ConfirmTransferScreen.tsx
+│   │   └── Profile/
+│   │       └── ProfileScreen.tsx
+│   │
+│   ├── navigation/       # Configuración de navegación
+│   │   ├── RootNavigator.tsx
+│   │   ├── AuthNavigator.tsx
+│   │   └── MainNavigator.tsx
+│   │
+│   ├── services/         # Llamadas API y lógica de negocio
+│   │   ├── api/
+│   │   │   ├── apollo-client.ts
+│   │   │   ├── auth.service.ts
+│   │   │   └── transfer.service.ts
+│   │   └── biometric/
+│   │       └── biometric.service.ts
+│   │
+│   ├── store/            # Redux store
+│   │   ├── store.ts
+│   │   ├── slices/
+│   │   │   ├── authSlice.ts
+│   │   │   ├── accountSlice.ts
+│   │   │   └── transferSlice.ts
+│   │   └── api/
+│   │       └── apiSlice.ts  # RTK Query
+│   │
+│   ├── hooks/            # Custom React hooks
+│   │   ├── useAuth.ts
+│   │   ├── useBiometric.ts
+│   │   └── useTransfer.ts
+│   │
+│   ├── utils/            # Utilidades
+│   │   ├── formatters.ts
+│   │   ├── validators.ts
+│   │   └── constants.ts
+│   │
+│   ├── types/            # TypeScript types
+│   │   ├── auth.types.ts
+│   │   ├── account.types.ts
+│   │   └── api.types.ts
+│   │
+│   └── graphql/          # GraphQL queries y mutations
+│       ├── queries/
+│       │   ├── accounts.gql.ts
+│       │   └── transactions.gql.ts
+│       └── mutations/
+│           └── transfer.gql.ts
+│
+├── android/              # Código nativo Android
+├── ios/                  # Código nativo iOS
+├── shared-logic/         # Lógica compartida con web
+│   ├── validators/
+│   ├── formatters/
+│   └── constants/
+│
+└── __tests__/            # Tests
+    ├── unit/
+    ├── integration/
+    └── e2e/
+        </pre>
+    </div>
+
+    <h3>8.6.2 Flujo de Autenticación con Biometría</h3>
+
+    <div class="diagram">
+        <div class="diagram-title">Login Flow con Face ID / Touch ID</div>
+        <pre>
+1. Usuario abre app
+   │
+   ├─► Si tiene sesión activa y biometría habilitada
+   │   │
+   │   └─► Solicita Face ID / Touch ID
+   │       │
+   │       ├─► Biometría exitosa
+   │       │   └─► Recupera token desde Keychain
+   │       │       └─► Valida token con backend
+   │       │           └─► [Si válido] → HomeScreen
+   │       │
+   │       └─► Biometría fallida
+   │           └─► LoginScreen (con opción de reintentar)
+   │
+   └─► Si NO tiene sesión activa
+       └─► LoginScreen
+           │
+           ├─► Usuario ingresa credenciales
+           │   └─► POST OAuth 2.0 /login
+           │       │
+           │       ├─► [Si exitoso]
+           │       │   ├─► Guardar tokens en Keychain
+           │       │   ├─► Preguntar si desea habilitar biometría
+           │       │   └─► HomeScreen
+           │       │
+           │       └─► [Si falla] → Mostrar error
+           │
+           └─► Opción: "Olvidé mi contraseña"
+        </pre>
+    </div>
+</div>
+
+<h2>8.7 Patrones de Diseño Implementados</h2>
+
+<div class="section">
+    <h3>8.7.1 Container/Presentational Pattern</h3>
+
+    <p>Separación clara entre lógica y presentación:</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Responsabilidad</th>
+                <th>Ejemplo</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Container (Smart)</strong></td>
+                <td>
+                    <ul>
+                        <li>Maneja estado y lógica de negocio</li>
+                        <li>Conecta con Redux/Apollo</li>
+                        <li>Maneja side effects</li>
+                    </ul>
+                </td>
+                <td>TransferScreenContainer.tsx</td>
+            </tr>
+            <tr>
+                <td><strong>Presentational (Dumb)</strong></td>
+                <td>
+                    <ul>
+                        <li>Solo renderiza UI</li>
+                        <li>Recibe datos via props</li>
+                        <li>Sin lógica de negocio</li>
+                        <li>Fácilmente testeable</li>
+                    </ul>
+                </td>
+                <td>TransferForm.tsx</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>8.7.2 Custom Hooks Pattern</h3>
+
+    <p>Encapsulación de lógica reutilizable:</p>
+
+    <ul>
+        <li><strong>useAuth():</strong> Maneja autenticación, login, logout</li>
+        <li><strong>useBiometric():</strong> Gestiona Face ID / Touch ID</li>
+        <li><strong>useTransfer():</strong> Lógica de transferencias</li>
+        <li><strong>useAccounts():</strong> Fetch y gestión de cuentas</li>
+        <li><strong>useNotifications():</strong> Push notifications setup</li>
+    </ul>
+
+    <h3>8.7.3 Atomic Design</h3>
+
+    <div class="diagram">
+        <div class="diagram-title">Jerarquía de Componentes</div>
+        <pre>
+┌─────────────────────────────────────────────────────────┐
+│                     PAGES (Templates)                   │
+│                 TransferScreen.tsx                      │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────┐
+│                     ORGANISMS                           │
+│     TransferForm, AccountList, TransactionHistory      │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────┐
+│                     MOLECULES                           │
+│        AccountCard, InputGroup, TransactionItem         │
+└──────────────────────────┬──────────────────────────────┘
+                           │
+┌──────────────────────────▼──────────────────────────────┐
+│                      ATOMS                              │
+│         Button, Input, Text, Icon, Avatar              │
+└─────────────────────────────────────────────────────────┘
+        </pre>
+    </div>
+</div>
+
+<h2>8.8 Gestión de Estado</h2>
+
+<div class="section">
+    <h3>8.8.1 Redux Toolkit Setup</h3>
+
+    <div class="diagram">
+        <div class="diagram-title">Arquitectura de Estado</div>
+        <pre>
+┌─────────────────────────────────────────────────────────┐
+│                    REDUX STORE                          │
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  State Slices:                                          │
+│  ┌──────────────────────────────────────────────┐     │
+│  │  auth: { user, token, isAuthenticated }      │     │
+│  │  accounts: { list, selected, loading }       │     │
+│  │  transfers: { pending, history }             │     │
+│  │  ui: { theme, language, notifications }      │     │
+│  └──────────────────────────────────────────────┘     │
+│                                                         │
+│  RTK Query (API Cache):                                 │
+│  ┌──────────────────────────────────────────────┐     │
+│  │  Automatic caching de GraphQL queries        │     │
+│  │  Invalidación inteligente                    │     │
+│  │  Polling y refetch automático                │     │
+│  └──────────────────────────────────────────────┘     │
+│                                                         │
+└─────────────────────────────────────────────────────────┘
+        </pre>
+    </div>
+
+    <h3>8.8.2 Persistencia de Estado</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Dato</th>
+                <th>Storage</th>
+                <th>Persistencia</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Tokens de autenticación</strong></td>
+                <td>Keychain (iOS) / Keystore (Android)</td>
+                <td>Permanente hasta logout</td>
+            </tr>
+            <tr>
+                <td><strong>Preferencias de usuario</strong></td>
+                <td>AsyncStorage</td>
+                <td>Permanente</td>
+            </tr>
+            <tr>
+                <td><strong>Caché de datos</strong></td>
+                <td>Redux Persist + AsyncStorage</td>
+                <td>Configurable (ej: 24 horas)</td>
+            </tr>
+            <tr>
+                <td><strong>Datos sensibles</strong></td>
+                <td>Solo en memoria (Redux)</td>
+                <td>Solo durante sesión activa</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.9 Performance y Optimizaciones</h2>
+
+<div class="section">
+    <h3>8.9.1 Técnicas de Optimización</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Técnica</th>
+                <th>Implementación</th>
+                <th>Beneficio</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Lazy Loading</strong></td>
+                <td>React.lazy() para screens pesadas</td>
+                <td>Reduce bundle inicial en 30-40%</td>
+            </tr>
+            <tr>
+                <td><strong>Memoization</strong></td>
+                <td>React.memo, useMemo, useCallback</td>
+                <td>Evita re-renders innecesarios</td>
+            </tr>
+            <tr>
+                <td><strong>FlatList Optimization</strong></td>
+                <td>windowSize, maxToRenderPerBatch, initialNumToRender</td>
+                <td>Listas de 1000+ items sin lag</td>
+            </tr>
+            <tr>
+                <td><strong>Image Optimization</strong></td>
+                <td>react-native-fast-image con caché</td>
+                <td>Carga de imágenes 3x más rápida</td>
+            </tr>
+            <tr>
+                <td><strong>Hermes Engine</strong></td>
+                <td>Motor JS optimizado para React Native</td>
+                <td>Reducción 50% en tiempo de inicio</td>
+            </tr>
+            <tr>
+                <td><strong>Code Splitting</strong></td>
+                <td>Separar código por features</td>
+                <td>Downloads bajo demanda</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>8.9.2 Métricas de Performance</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Métrica</th>
+                <th>Objetivo</th>
+                <th>Herramienta de Medición</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Time to Interactive</strong></td>
+                <td>&lt; 3 segundos</td>
+                <td>Flipper Performance Monitor</td>
+            </tr>
+            <tr>
+                <td><strong>Frame Rate</strong></td>
+                <td>60 FPS consistente</td>
+                <td>Flipper / Perf Monitor</td>
+            </tr>
+            <tr>
+                <td><strong>Bundle Size</strong></td>
+                <td>&lt; 25 MB (APK/IPA)</td>
+                <td>Build analytics</td>
+            </tr>
+            <tr>
+                <td><strong>API Response Time</strong></td>
+                <td>&lt; 500ms (p95)</td>
+                <td>Apollo DevTools</td>
+            </tr>
+            <tr>
+                <td><strong>Crash-free Rate</strong></td>
+                <td>&gt; 99.5%</td>
+                <td>Sentry</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.10 Seguridad en Frontend</h2>
+
+<div class="section">
+    <h3>8.10.1 Medidas de Seguridad Implementadas</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Aspecto</th>
+                <th>Implementación</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Almacenamiento de Tokens</strong></td>
+                <td>
+                    <ul>
+                        <li>Keychain (iOS) con kSecAttrAccessibleWhenUnlockedThisDeviceOnly</li>
+                        <li>Keystore (Android) con hardware-backed encryption</li>
+                        <li>NUNCA en AsyncStorage sin cifrado</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Certificate Pinning</strong></td>
+                <td>
+                    <ul>
+                        <li>Pinning del certificado SSL del backend</li>
+                        <li>Previene ataques MITM</li>
+                        <li>Implementado con react-native-ssl-pinning</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Jailbreak/Root Detection</strong></td>
+                <td>
+                    <ul>
+                        <li>Detectar dispositivos comprometidos</li>
+                        <li>Bloquear funciones sensibles (transferencias, cambio de clave)</li>
+                        <li>Implementado con react-native-device-info</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Ofuscación de Código</strong></td>
+                <td>
+                    <ul>
+                        <li>ProGuard (Android) para ofuscar bytecode</li>
+                        <li>Bitcode (iOS) para optimización</li>
+                        <li>Remover logs en producción</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Input Validation</strong></td>
+                <td>
+                    <ul>
+                        <li>Validación en cliente Y servidor</li>
+                        <li>Sanitización de inputs</li>
+                        <li>Límites de caracteres</li>
+                    </ul>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>Session Timeout</strong></td>
+                <td>
+                    <ul>
+                        <li>15 minutos de inactividad</li>
+                        <li>Requiere biometría o login para reactivar</li>
+                    </ul>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>8.10.2 Prevención de Ataques Comunes</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Ataque</th>
+                <th>Prevención</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Screenshot / Screen Recording</strong></td>
+                <td>Bloquear capturas en pantallas con datos sensibles</td>
+            </tr>
+            <tr>
+                <td><strong>Clipboard Hijacking</strong></td>
+                <td>No copiar datos sensibles al clipboard</td>
+            </tr>
+            <tr>
+                <td><strong>Deep Link Exploitation</strong></td>
+                <td>Validar todos los deep links, nunca ejecutar acciones sensibles directamente</td>
+            </tr>
+            <tr>
+                <td><strong>Reverse Engineering</strong></td>
+                <td>Ofuscación + detección de debugging + certificate pinning</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.11 Testing Strategy</h2>
+
+<div class="section">
+    <h3>8.11.1 Pirámide de Testing</h3>
+
+    <div class="diagram">
+        <div class="diagram-title">Estrategia de Testing</div>
+        <pre>
+        ┌─────────────┐
+        │   E2E (5%)  │  - Detox
+        │   Críticos  │  - Flujos completos
+        └─────────────┘  - Login, Transfer
+      ┌─────────────────┐
+      │ Integration     │  - React Native Testing Library
+      │ (20%)           │  - Componentes + Redux
+      └─────────────────┘  - Navigation flows
+    ┌───────────────────────┐
+    │   Unit Tests          │  - Jest
+    │   (75%)               │  - Funciones puras
+    └───────────────────────┘  - Utils, validators
+        </pre>
+    </div>
+
+    <h3>8.11.2 Cobertura de Tests</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Cobertura Objetivo</th>
+                <th>Qué se Testea</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Unit Tests</strong></td>
+                <td>&gt; 80%</td>
+                <td>Utils, formatters, validators, custom hooks</td>
+            </tr>
+            <tr>
+                <td><strong>Integration Tests</strong></td>
+                <td>&gt; 60%</td>
+                <td>Componentes con Redux, navigation, API calls</td>
+            </tr>
+            <tr>
+                <td><strong>E2E Tests</strong></td>
+                <td>Flujos críticos</td>
+                <td>Login, transferencias, consultas, cambio clave</td>
+            </tr>
+            <tr>
+                <td><strong>Snapshot Tests</strong></td>
+                <td>Componentes UI</td>
+                <td>Prevenir regresiones visuales</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.12 CI/CD Pipeline</h2>
+
+<div class="section">
+    <h3>8.12.1 Pipeline Automatizado</h3>
+
+    <div class="diagram">
+        <div class="diagram-title">Flujo de CI/CD</div>
+        <pre>
+1. Developer Push a Git
+   │
+   ├─► Trigger CI (GitHub Actions / GitLab CI)
+   │
+   ▼
+2. Lint & Type Check
+   ├─► ESLint
+   ├─► TypeScript compiler
+   └─► [Si falla] → Bloquear PR
+   │
+   ▼
+3. Unit & Integration Tests
+   ├─► Jest (all tests)
+   └─► [Si falla] → Bloquear PR
+   │
+   ▼
+4. Build App
+   ├─► Android: ./gradlew assembleRelease
+   ├─► iOS: xcodebuild archive
+   └─► [Si falla] → Notificar team
+   │
+   ▼
+5. E2E Tests (Detox)
+   ├─► Run en emuladores
+   └─► [Si falla] → Notificar team
+   │
+   ▼
+6. Deploy to Beta (TestFlight / Firebase App Distribution)
+   ├─► Android: Firebase App Distribution
+   ├─► iOS: TestFlight
+   └─► Notificar testers
+   │
+   ▼
+7. Manual QA Approval
+   │
+   ▼
+8. Deploy to Production
+   ├─► Android: Google Play (staged rollout 10% → 100%)
+   └─► iOS: App Store (phased release)
+        </pre>
+    </div>
+
+    <h3>8.12.2 Estrategia de Releases</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Ambiente</th>
+                <th>Frecuencia</th>
+                <th>Estrategia</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Beta (Internal)</strong></td>
+                <td>Diaria</td>
+                <td>Automatic deployment on merge to develop</td>
+            </tr>
+            <tr>
+                <td><strong>Beta (External)</strong></td>
+                <td>Semanal</td>
+                <td>TestFlight / Firebase App Distribution</td>
+            </tr>
+            <tr>
+                <td><strong>Production</strong></td>
+                <td>Bi-semanal</td>
+                <td>Staged rollout: 10% → 25% → 50% → 100% en 3 días</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.13 Accesibilidad (a11y)</h2>
+
+<div class="section">
+    <h3>8.13.1 Estándares de Accesibilidad</h3>
+
+    <ul>
+        <li><strong>Screen Reader Support:</strong> VoiceOver (iOS) y TalkBack (Android)</li>
+        <li><strong>Contraste de colores:</strong> WCAG AA mínimo (4.5:1)</li>
+        <li><strong>Tamaños táctiles:</strong> Mínimo 44x44pt (iOS) / 48x48dp (Android)</li>
+        <li><strong>Labels descriptivos:</strong> accessibilityLabel en todos los componentes interactivos</li>
+        <li><strong>Focus order:</strong> Navegación lógica con keyboard/screen reader</li>
+        <li><strong>Texto escalable:</strong> Soporte para tamaños de fuente del sistema</li>
+    </ul>
+
+    <h3>8.13.2 Testing de Accesibilidad</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Herramienta</th>
+                <th>Uso</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>@react-native-community/eslint-plugin</strong></td>
+                <td>Linting de reglas de accesibilidad</td>
+            </tr>
+            <tr>
+                <td><strong>Flipper Accessibility Inspector</strong></td>
+                <td>Debug de issues de accesibilidad</td>
+            </tr>
+            <tr>
+                <td><strong>Manual Testing</strong></td>
+                <td>Testing con VoiceOver y TalkBack habilitados</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.14 Internacionalización (i18n)</h2>
+
+<div class="section">
+    <h3>8.14.1 Setup de i18n</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Aspecto</th>
+                <th>Implementación</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Librería</strong></td>
+                <td>react-i18next</td>
+            </tr>
+            <tr>
+                <td><strong>Idiomas Soportados</strong></td>
+                <td>Español (es), Inglés (en)</td>
+            </tr>
+            <tr>
+                <td><strong>Detección de Idioma</strong></td>
+                <td>Automática según configuración del dispositivo</td>
+            </tr>
+            <tr>
+                <td><strong>Formateo de Números</strong></td>
+                <td>Intl.NumberFormat para montos</td>
+            </tr>
+            <tr>
+                <td><strong>Formateo de Fechas</strong></td>
+                <td>date-fns con locale support</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.15 Monitoreo y Analytics</h2>
+
+<div class="section">
+    <h3>8.15.1 Métricas Trackeadas</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Categoría</th>
+                <th>Eventos</th>
+                <th>Herramienta</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>User Engagement</strong></td>
+                <td>
+                    <ul>
+                        <li>App opens</li>
+                        <li>Screen views</li>
+                        <li>Session duration</li>
+                    </ul>
+                </td>
+                <td>Firebase Analytics</td>
+            </tr>
+            <tr>
+                <td><strong>Business Metrics</strong></td>
+                <td>
+                    <ul>
+                        <li>Transfers completed</li>
+                        <li>Transfer amounts</li>
+                        <li>Login success rate</li>
+                    </ul>
+                </td>
+                <td>Firebase Analytics + Custom events</td>
+            </tr>
+            <tr>
+                <td><strong>Performance</strong></td>
+                <td>
+                    <ul>
+                        <li>App start time</li>
+                        <li>Screen load time</li>
+                        <li>API response time</li>
+                    </ul>
+                </td>
+                <td>Firebase Performance Monitoring</td>
+            </tr>
+            <tr>
+                <td><strong>Errors & Crashes</strong></td>
+                <td>
+                    <ul>
+                        <li>Crash reports</li>
+                        <li>Error logs</li>
+                        <li>Stack traces</li>
+                    </ul>
+                </td>
+                <td>Sentry</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>8.16 Costos de Desarrollo</h2>
+
+<div class="section">
+    <table>
+        <thead>
+            <tr>
+                <th>Concepto</th>
+                <th>Costo Estimado (USD)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Desarrollo MVP (4 meses)</strong></td>
+                <td>$120,000</td>
+            </tr>
+            <tr>
+                <td><strong>Apple Developer Account</strong></td>
+                <td>$99/año</td>
+            </tr>
+            <tr>
+                <td><strong>Google Play Developer Account</strong></td>
+                <td>$25 (único)</td>
+            </tr>
+            <tr>
+                <td><strong>Firebase (Analytics + Performance)</strong></td>
+                <td>$0 (Spark plan gratis)</td>
+            </tr>
+            <tr>
+                <td><strong>Sentry (Crash reporting)</strong></td>
+                <td>$26/mes (Team plan)</td>
+            </tr>
+            <tr>
+                <td><strong>CI/CD (GitHub Actions)</strong></td>
+                <td>$0 (incluido en GitHub)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="success">
+        <strong>Total Primer Año:</strong> ~$120,500 (desarrollo + servicios)
+    </div>
+</div>
+
+<div class="success">
+    <h3>✅ Resumen del Capítulo</h3>
+    <p>La arquitectura frontend propuesta con React Native ofrece:</p>
+    <ul>
+        <li><strong>Reutilización de código:</strong> 60-70% compartido entre web y móvil</li>
+        <li><strong>Stack unificado:</strong> JavaScript/TypeScript end-to-end</li>
+        <li><strong>Time-to-market:</strong> MVP en 3-4 meses versus 6-8 con Kotlin MP</li>
+        <li><strong>Costo optimizado:</strong> Ahorro de $430K en 3 años vs Kotlin Multiplatform</li>
+        <li><strong>Ecosistema maduro:</strong> 50K+ paquetes, gran comunidad, casos de éxito en fintech</li>
+        <li><strong>Performance:</strong> 60 FPS, Time to Interactive &lt; 3s</li>
+        <li><strong>Seguridad:</strong> Keychain, certificate pinning, jailbreak detection</li>
+        <li><strong>Testing robusto:</strong> &gt;80% cobertura, E2E con Detox</li>
+        <li><strong>CI/CD automatizado:</strong> Deploy continuo a TestFlight y Play Store</li>
+    </ul>
+    <p><strong>Decisión final:</strong> React Native es la mejor opción considerando el stack actual del equipo, time-to-market, costos y reutilización de código.</p>
+</div>
+
+<div class="footer">
+    <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 8 de 17</p>
+</div>
+
+</body>
+</html>
