@@ -1,0 +1,2047 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capítulo 10 - Estrategia de Seguridad Integral</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="nav-header">
+    <h2>Capítulo 10: Estrategia de Seguridad Integral</h2>
+    <div class="nav-buttons">
+        <a href="capitulo_09.html" class="nav-btn">← Anterior</a>
+        <a href="index.html" class="nav-btn">Índice</a>
+        <a href="capitulo_11.html" class="nav-btn">Siguiente →</a>
+    </div>
+</div>
+
+<h1>10. ESTRATEGIA DE SEGURIDAD INTEGRAL</h1>
+
+<div class="section">
+    <p>La seguridad del sistema bancario se implementa mediante una estrategia de <strong>Defense in Depth</strong> con múltiples capas de protección, siguiendo el modelo <strong>Zero Trust</strong> donde "nunca confiar, siempre verificar" es el principio fundamental.</p>
+</div>
+
+<h2>10.1 Principios de Seguridad</h2>
+
+<div class="section">
+    <div class="diagram">
+        <div class="diagram-title">Defense in Depth - Capas de Seguridad</div>
+        <pre class="mermaid">
+---
+config:
+  layout: dagre
+---
+flowchart BT
+ subgraph C7["📱 Capa 7: Usuarios"]
+        U1["MFA Obligatorio"]
+        U2["Biometría"]
+        U3["Security Awareness"]
+  end
+ subgraph C6["🌐 Capa 6: Aplicación Web"]
+        W1["WAF"]
+        W2["Rate Limiting"]
+        W3["CORS"]
+        W4["CSP"]
+        W5["Input Validation"]
+  end
+ subgraph C5["🔌 Capa 5: API Gateway"]
+        A1["JWT Validation"]
+        A2["OAuth 2.0"]
+        A3["Throttling"]
+        A4["API Keys"]
+  end
+ subgraph C4["⚙️ Capa 4: Microservicios"]
+        M1["Service Mesh - mTLS"]
+        M2["RBAC"]
+        M3["Input Sanitization"]
+  end
+ subgraph C3["💾 Capa 3: Base de Datos"]
+        D1["Encryption at Rest"]
+        D2["Row-Level Security"]
+        D3["Audit Logs"]
+  end
+ subgraph C2["🌍 Capa 2: Red y Infraestructura"]
+        N1["Network Policies"]
+        N2["Firewalls"]
+        N3["IDS/IPS"]
+        N4["VPN"]
+  end
+ subgraph C1["🖥️ Capa 1: Físico/Cloud"]
+        P1["Cifrado de Disco"]
+        P2["TPM"]
+        P3["Secure Boot"]
+        P4["Cloud Security"]
+  end
+    C1 --> C2
+    C2 --> C3
+    C3 --> C4
+    C4 --> C5
+    C5 --> C6
+    C6 --> C7
+     U1:::item
+     U2:::item
+     U3:::item
+     W1:::item
+     W2:::item
+     W3:::item
+     W4:::item
+     W5:::item
+     A1:::item
+     A2:::item
+     A3:::item
+     A4:::item
+     M1:::item
+     M2:::item
+     M3:::item
+     D1:::item
+     D2:::item
+     D3:::item
+     N1:::item
+     N2:::item
+     N3:::item
+     N4:::item
+     P1:::item
+     P2:::item
+     P3:::item
+     P4:::item
+     C1:::capa1
+     C2:::capa2
+     C3:::capa3
+     C4:::capa4
+     C5:::capa5
+     C6:::capa6
+     C7:::capa7
+    classDef capa1 fill:#FFE0E0,stroke:#D32F2F,stroke-width:2px,rx:15,ry:15
+    classDef capa2 fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,rx:15,ry:15
+    classDef capa3 fill:#E8F5E9,stroke:#388E3C,stroke-width:2px,rx:15,ry:15
+    classDef capa4 fill:#FFF3E0,stroke:#F57C00,stroke-width:2px,rx:15,ry:15
+    classDef capa5 fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,rx:15,ry:15
+    classDef capa6 fill:#E0F2F1,stroke:#00796B,stroke-width:2px,rx:15,ry:15
+    classDef capa7 fill:#FFF8E1,stroke:#FF8F00,stroke-width:2px,rx:15,ry:15
+    classDef item fill:#FFFFFF,stroke:#666666,stroke-width:1px,rx:8,ry:8
+
+        </pre>
+    </div>
+
+    <h3>Principios Fundamentales</h3>
+    
+    <div class="warning">
+        <h4>Security by Design</h4>
+        <ul>
+            <li><strong>Least Privilege:</strong> Permisos mínimos necesarios por defecto</li>
+            <li><strong>Fail Secure:</strong> En caso de error, fallar de forma segura</li>
+            <li><strong>Defense in Depth:</strong> Múltiples capas de seguridad</li>
+            <li><strong>Zero Trust:</strong> "Never trust, always verify"</li>
+            <li><strong>Privacy by Design:</strong> GDPR compliance desde arquitectura</li>
+        </ul>
+    </div>
+</div>
+
+<h2>10.2 Arquitectura Zero Trust</h2>
+
+<div class="section">
+    <div class="diagram">
+        <div class="diagram-title">Modelo Zero Trust Implementado</div>
+        <pre class="mermaid">
+   flowchart TB
+    %% === API GATEWAY ===
+    APIGateway[API GATEWAY<br/>+ Auth Server]
+    
+    %% === MICROSERVICES ===
+    MS1[Microservice A]
+    MS2[Microservice B]
+    MS3[Microservice C]
+    
+    %% === SERVICE MESH ===
+    ServiceMesh[SERVICE MESH<br/>
+        Istio]
+    
+    %% === FEATURES ===
+    subgraph Features[Características&nbsp;de&nbsp;Seguridad]
+        F1[mTLS entre servicios]
+        F2[Certificate Rotation<br/>
+            cada 1 hora]
+        F3[Network Policies]
+        F4[Traffic Management]
+    end
+    
+    %% === CONNECTIONS ===
+    APIGateway --> MS1
+    APIGateway --> MS2
+    APIGateway --> MS3
+    
+    MS1 --> ServiceMesh
+    MS2 --> ServiceMesh
+    MS3 --> ServiceMesh
+    
+    ServiceMesh --> Features
+    
+    %% === STYLES ===
+    classDef gateway fill:#E3F2FD,stroke:#1976D2,stroke-width:3px,rx:15,ry:15
+    classDef microservice fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,rx:10,ry:10
+    classDef serviceMesh fill:#FFF3E0,stroke:#FF9800,stroke-width:3px,rx:15,ry:15
+    classDef features fill:#FFF9C4,stroke:#FBC02D,stroke-width:2px,rx:8,ry:8
+    classDef featureItem fill:#FFFDE7,stroke:#FBC02D,stroke-width:1px,rx:5,ry:5
+    
+    class APIGateway gateway
+    class MS1,MS2,MS3 microservice
+    class ServiceMesh serviceMesh
+    class Features features
+    class F1,F2,F3,F4 featureItem
+        </pre>
+    </div>
+
+    <h3>Componentes Zero Trust</h3>
+
+    <h4>1. Autenticación y Autorización Continua</h4>
+    <table>
+        <thead>
+            <tr>
+                <th>Componente</th>
+                <th>Tecnología</th>
+                <th>Configuración</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Identity Provider</strong></td>
+                <td>Keycloak / Auth0</td>
+                <td>OAuth 2.0 + OIDC + PKCE</td>
+            </tr>
+            <tr>
+                <td><strong>Token Lifetime</strong></td>
+                <td>JWT Access Token</td>
+                <td>15 minutos (rotación)</td>
+            </tr>
+            <tr>
+                <td><strong>Refresh Token</strong></td>
+                <td>Secure Cookie</td>
+                <td>7 días (revocable)</td>
+            </tr>
+            <tr>
+                <td><strong>Service-to-Service</strong></td>
+                <td>mTLS Certificates</td>
+                <td>1 hora (auto-renovación)</td>
+            </tr>
+            <tr>
+                <td><strong>API Authorization</strong></td>
+                <td>OPA (Open Policy Agent)</td>
+                <td>Rego Policies</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>2. Micro-Segmentación de Red</h4>
+    
+    <div class="code-block">
+        <h4>Network Policy - Kubernetes</h4>
+        <pre><code>apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: accounts-service-policy
+  namespace: banking-prod
+spec:
+  podSelector:
+    matchLabels:
+      app: accounts-service
+  policyTypes:
+    - Ingress
+    - Egress
+  
+  # Solo recibe tráfico del API Gateway
+  ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            app: api-gateway
+      ports:
+        - protocol: TCP
+          port: 3000
+  
+  # Solo puede hablar con PostgreSQL y Message Bus
+  egress:
+    - to:
+      - podSelector:
+          matchLabels:
+            app: postgres
+      ports:
+        - protocol: TCP
+          port: 5432
+    
+    - to:
+      - podSelector:
+          matchLabels:
+            app: kafka
+      ports:
+        - protocol: TCP
+          port: 9092
+    
+    # DNS resolution
+    - to:
+      - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53</code></pre>
+    </div>
+
+    <h4>3. Service Mesh con mTLS</h4>
+
+    <div class="code-block">
+        <h4>Istio PeerAuthentication - mTLS Estricto</h4>
+        <pre><code>apiVersion: security.istio.io/v1beta1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: banking-prod
+spec:
+  mtls:
+    mode: STRICT  # Solo mTLS, rechazar tráfico sin cifrar
+
+---
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: accounts-service-authz
+  namespace: banking-prod
+spec:
+  selector:
+    matchLabels:
+      app: accounts-service
+  action: ALLOW
+  rules:
+    # Solo API Gateway puede llamar
+    - from:
+      - source:
+          principals: ["cluster.local/ns/banking-prod/sa/api-gateway"]
+      to:
+      - operation:
+          methods: ["GET", "POST", "PUT"]
+          paths: ["/accounts/*"]
+      when:
+      - key: request.auth.claims[role]
+        values: ["api-service"]</code></pre>
+    </div>
+</div>
+
+<h2>10.3 Seguridad en la Capa de Red</h2>
+
+<div class="section">
+    <h3>Componentes de Seguridad de Red</h3>
+
+    <h4>1. Web Application Firewall (WAF)</h4>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Protección</th>
+                <th>Reglas Implementadas</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>SQL Injection</strong></td>
+                <td>OWASP Core Rule Set 3.3</td>
+                <td>Block + Log + Alert</td>
+            </tr>
+            <tr>
+                <td><strong>XSS</strong></td>
+                <td>Content-Type validation, CSP</td>
+                <td>Block + Sanitize</td>
+            </tr>
+            <tr>
+                <td><strong>CSRF</strong></td>
+                <td>SameSite Cookies + Tokens</td>
+                <td>Reject requests</td>
+            </tr>
+            <tr>
+                <td><strong>DDoS Layer 7</strong></td>
+                <td>Rate limiting por IP/User</td>
+                <td>Throttle + Captcha</td>
+            </tr>
+            <tr>
+                <td><strong>Geo-Blocking</strong></td>
+                <td>Permitir solo países autorizados</td>
+                <td>Block by GeoIP</td>
+            </tr>
+            <tr>
+                <td><strong>Bot Detection</strong></td>
+                <td>Cloudflare Bot Management</td>
+                <td>Challenge/Block</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="code-block">
+        <h4>CloudFlare WAF Configuration</h4>
+        <pre><code>// Rate Limiting Rules
+{
+  "id": "rl_login_endpoint",
+  "expression": "(http.request.uri.path eq \"/api/auth/login\")",
+  "action": "challenge",
+  "ratelimit": {
+    "characteristics": ["ip.src"],
+    "period": 60,
+    "requests_per_period": 5,
+    "mitigation_timeout": 600  // 10 min ban
+  }
+}
+
+// Geographic Restrictions
+{
+  "id": "geo_restriction",
+  "expression": "(not ip.geoip.country in {\"US\" \"CA\" \"MX\" \"EC\" \"CO\" \"PE\"})",
+  "action": "block"
+}
+
+// OWASP Top 10
+{
+  "id": "owasp_protection",
+  "expression": "(cf.waf.score gt 30)",
+  "action": "block",
+  "description": "Block high-risk OWASP threats"
+}</code></pre>
+    </div>
+
+    <h4>2. DDoS Protection (Layer 3/4)</h4>
+
+    <div class="success">
+        <strong>CloudFlare DDoS Protection</strong>
+        <ul>
+            <li>✓ <strong>Volumetric Attacks:</strong> 100+ Tbps capacidad</li>
+            <li>✓ <strong>SYN Flood:</strong> TCP SYN cookies automáticos</li>
+            <li>✓ <strong>UDP Flood:</strong> Rate limiting inteligente</li>
+            <li>✓ <strong>DNS Amplification:</strong> Filtrado automático</li>
+            <li>✓ <strong>Auto-Mitigation:</strong> &lt;3 segundos de detección</li>
+        </ul>
+    </div>
+
+    <h4>3. API Rate Limiting</h4>
+
+    <div class="code-block">
+        <h4>Kong API Gateway - Rate Limiting Plugin</h4>
+        <pre><code>// Rate Limiting por Endpoint
+plugins:
+  - name: rate-limiting
+    config:
+      minute: 100
+      hour: 5000
+      policy: redis
+      fault_tolerant: true
+      hide_client_headers: false
+      redis:
+        host: redis-cluster
+        port: 6379
+        timeout: 2000
+        database: 0
+
+// Rate Limiting por Usuario (más permisivo)
+  - name: rate-limiting
+    config:
+      minute: 500
+      hour: 20000
+      limit_by: credential
+      policy: redis
+
+// Protección de endpoints críticos
+routes:
+  - name: transfer_money
+    plugins:
+      - name: rate-limiting
+        config:
+          minute: 10      # Solo 10 transferencias por minuto
+          hour: 100       # 100 por hora
+          policy: redis
+          limit_by: credential</code></pre>
+    </div>
+</div>
+
+<h2>10.4 Seguridad de Aplicaciones (OWASP)</h2>
+
+<div class="section">
+    <h3>OWASP Top 10 - Mitigación Completa</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Vulnerabilidad</th>
+                <th>Mitigación Implementada</th>
+                <th>Herramientas</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>A01: Broken Access Control</strong></td>
+                <td>
+                    • RBAC con OPA<br>
+                    • JWT con scopes<br>
+                    • Row-Level Security en DB
+                </td>
+                <td>Keycloak, PostgreSQL RLS</td>
+            </tr>
+            <tr>
+                <td><strong>A02: Cryptographic Failures</strong></td>
+                <td>
+                    • TLS 1.3 obligatorio<br>
+                    • AES-256-GCM para datos<br>
+                    • Bcrypt para passwords<br>
+                    • Secrets en Vault
+                </td>
+                <td>Vault, AWS KMS</td>
+            </tr>
+            <tr>
+                <td><strong>A03: Injection</strong></td>
+                <td>
+                    • Prepared Statements<br>
+                    • Input validation (Joi/Zod)<br>
+                    • GraphQL query complexity limits<br>
+                    • WAF rules
+                </td>
+                <td>TypeORM, GraphQL Shield</td>
+            </tr>
+            <tr>
+                <td><strong>A04: Insecure Design</strong></td>
+                <td>
+                    • Threat Modeling (STRIDE)<br>
+                    • Security by Design<br>
+                    • Code Reviews obligatorios
+                </td>
+                <td>Microsoft Threat Modeling Tool</td>
+            </tr>
+            <tr>
+                <td><strong>A05: Security Misconfiguration</strong></td>
+                <td>
+                    • Infrastructure as Code<br>
+                    • Security scanning automático<br>
+                    • Hardened Docker images
+                </td>
+                <td>Terraform, Trivy, Snyk</td>
+            </tr>
+            <tr>
+                <td><strong>A06: Vulnerable Components</strong></td>
+                <td>
+                    • npm audit en CI/CD<br>
+                    • Dependabot alerts<br>
+                    • Container scanning
+                </td>
+                <td>Snyk, Trivy, Dependabot</td>
+            </tr>
+            <tr>
+                <td><strong>A07: Identification/Authentication</strong></td>
+                <td>
+                    • MFA obligatorio<br>
+                    • Biometría<br>
+                    • Session timeout<br>
+                    • Brute-force protection
+                </td>
+                <td>Auth0, Keycloak</td>
+            </tr>
+            <tr>
+                <td><strong>A08: Software/Data Integrity</strong></td>
+                <td>
+                    • Signed container images<br>
+                    • Git commit signing<br>
+                    • Checksums de dependencias
+                </td>
+                <td>Cosign, GPG</td>
+            </tr>
+            <tr>
+                <td><strong>A09: Security Logging/Monitoring</strong></td>
+                <td>
+                    • ELK Stack<br>
+                    • Audit logs inmutables<br>
+                    • SIEM (Splunk/Wazuh)
+                </td>
+                <td>ELK, Wazuh, Grafana</td>
+            </tr>
+            <tr>
+                <td><strong>A10: SSRF</strong></td>
+                <td>
+                    • Whitelist de URLs<br>
+                    • Network policies<br>
+                    • URL validation
+                </td>
+                <td>Kong, Network Policies</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>Input Validation - Ejemplo</h4>
+
+    <div class="code-block">
+        <pre><code>import Joi from 'joi';
+import DOMPurify from 'isomorphic-dompurify';
+
+// Schema de validación
+const transferSchema = Joi.object({
+  fromAccount: Joi.string().alphanum().length(20).required(),
+  toAccount: Joi.string().alphanum().length(20).required(),
+  amount: Joi.number().positive().max(1000000).precision(2).required(),
+  description: Joi.string().max(200).optional(),
+  otp: Joi.string().length(6).pattern(/^[0-9]+$/).required()
+});
+
+// Middleware de validación
+export const validateTransfer = (req, res, next) => {
+  const { error, value } = transferSchema.validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true  // Eliminar campos no esperados
+  });
+
+  if (error) {
+    return res.status(400).json({
+      error: 'Validation Error',
+      details: error.details.map(d => d.message)
+    });
+  }
+
+  // Sanitizar strings
+  if (value.description) {
+    value.description = DOMPurify.sanitize(value.description);
+  }
+
+  req.validatedData = value;
+  next();
+};</code></pre>
+    </div>
+</div>
+
+<h2>10.5 Gestión de Secretos y Credenciales</h2>
+
+<div class="section">
+    <div class="diagram">
+        <div class="diagram-title">HashiCorp Vault Architecture</div>
+        <pre class="mermaid">
+      graph TD
+                KUBERNETES["KUBERNETES CLUSTER"]
+                
+                subgraph KUBERNETES
+                    B["Microservice A<br/>
+                        (needs secrets)"]
+                    C["Vault Agent<br/>
+                        (Sidecar)"]
+                    B --> C
+                end
+
+                subgraph D[VAULT CLUSTER HA]
+                    E[Vault]
+                    F[Vault]
+                    G[Vault]
+                end
+
+                H["STORAGE BACKEND<br/>
+                    (Encrypted Consul)"]
+
+                C -->|mTLS| D
+                D --> H
+
+                classDef k8s fill:#E3F2FD,stroke:#1976D2,stroke-width:2px
+                classDef microservice fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+                classDef vaultagent fill:#FFF9C4,stroke:#F57C00,stroke-width:2px
+                classDef vault fill:#FFE0B2,stroke:#EF6C00,stroke-width:2px
+                classDef storage fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px
+
+                class A k8s
+                class B microservice
+                class C vaultagent
+                class E,F,G vault
+                class D vault
+                class H storage
+    
+        </pre>
+    </div>
+
+    <h3>Vault Configuration</h3>
+
+    <div class="code-block">
+        <h4>Vault Policy - Microservices</h4>
+        <pre><code># Política para Accounts Service
+path "secret/data/banking/accounts/*" {
+  capabilities = ["read"]
+}
+
+path "database/creds/accounts-role" {
+  capabilities = ["read"]  # Credenciales dinámicas de DB
+}
+
+path "pki/issue/banking-intermediate" {
+  capabilities = ["create", "update"]  # Generar certificados
+}
+
+# No puede leer secretos de otros servicios
+path "secret/data/banking/payments/*" {
+  capabilities = ["deny"]
+}</code></pre>
+    </div>
+
+    <div class="code-block">
+        <h4>Kubernetes ServiceAccount Integration</h4>
+        <pre><code># Deployment con Vault Sidecar
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: accounts-service
+spec:
+  template:
+    metadata:
+      annotations:
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "accounts-service"
+        vault.hashicorp.com/agent-inject-secret-db: "database/creds/accounts-role"
+        vault.hashicorp.com/agent-inject-template-db: |
+          {{- with secret "database/creds/accounts-role" -}}
+          export DB_USERNAME="{{ .Data.username }}"
+          export DB_PASSWORD="{{ .Data.password }}"
+          {{- end -}}
+    spec:
+      serviceAccountName: accounts-service
+      containers:
+        - name: accounts-api
+          image: accounts-service:v1.2.0
+          env:
+            - name: VAULT_ADDR
+              value: "https://vault.banking.svc:8200"</code></pre>
+    </div>
+
+    <h3>Tipos de Secretos Gestionados</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Almacenamiento</th>
+                <th>Rotación</th>
+                <th>Lifetime</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>DB Credentials</strong></td>
+                <td>Vault Dynamic Secrets</td>
+                <td>Automática</td>
+                <td>1 hora</td>
+            </tr>
+            <tr>
+                <td><strong>API Keys</strong></td>
+                <td>Vault KV v2</td>
+                <td>Manual (quarterly)</td>
+                <td>90 días</td>
+            </tr>
+            <tr>
+                <td><strong>TLS Certificates</strong></td>
+                <td>Vault PKI Engine</td>
+                <td>Automática</td>
+                <td>24 horas</td>
+            </tr>
+            <tr>
+                <td><strong>Encryption Keys</strong></td>
+                <td>AWS KMS + Vault Transit</td>
+                <td>Automática (versioning)</td>
+                <td>1 año</td>
+            </tr>
+            <tr>
+                <td><strong>OAuth Secrets</strong></td>
+                <td>Vault KV v2</td>
+                <td>Manual</td>
+                <td>180 días</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="warning">
+        <strong>Secretos NUNCA en:</strong>
+        <ul>
+            <li>[NO] Variables de entorno en Docker/K8s YAML</li>
+            <li>[NO] Git repositories (ni siquiera en .gitignore)</li>
+            <li>[NO] ConfigMaps de Kubernetes</li>
+            <li>[NO] Logs de aplicación</li>
+            <li>[NO] Código fuente hardcoded</li>
+        </ul>
+    </div>
+</div>
+
+<h2>10.6 Cifrado de Datos</h2>
+
+<div class="section">
+    <h3>Estrategia de Cifrado</h3>
+
+    <div class="diagram">
+        <pre class="mermaid">
+graph LR
+    %% === COMPONENTES PRINCIPALES ===
+    CLIENT[📱<br/>CLIENTE]
+    LB[🌐<br/>LOAD BALANCER]
+    API[🔌<br/>API GATEWAY]
+    MS[⚙️<br/>MICROSERVICES]
+    DB[🐘<br/>POSTGRESQL]
+    DISK[💾<br/>DISK STORAGE]
+    BACKUP[📦<br/>BACKUPS]
+
+    %% === CONEXIONES CON CIFRADO ===
+    CLIENT -.->|TLS 1.3| LB
+    LB -.->|mTLS| API
+    API -.->|mTLS| MS
+    MS -.->|TLS| DB
+    DB -.->|TDE| DISK
+    DISK -.->|AES-256-XTS| BACKUP
+
+    %% === CAPAS DE CIFRADO ===
+    subgraph EN_TRANSITO[🌐 Cifrado en Tránsito]
+        T1[TLS 1.3]
+        T2[mTLS]
+        T3[TLS]
+    end
+
+    subgraph EN_BASE_DATOS[🗄️ Cifrado Base de Datos]
+        B1[PostgreSQL TDE]
+    end
+
+    subgraph EN_ALMACENAMIENTO[💾 Cifrado en Reposo]
+        A1[AES-256-XTS]
+    end
+
+    subgraph EN_BACKUPS[🛡️ Cifrado de Backups]
+        BK1[AES-256-GCM]
+        BK2[GPG]
+    end
+
+    %% === RELACIONES DE CIFRADO ===
+    CLIENT --> T1
+    LB --> T2
+    API --> T2
+    MS --> T3
+    DB --> B1
+    DISK --> A1
+    BACKUP --> BK1
+    BACKUP --> BK2
+
+    %% === ESTILOS ===
+    classDef title fill:#1565C0,stroke:#0D47A1,stroke-width:3px,color:#FFFFFF
+    classDef component fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,rx:8,ry:8
+    classDef transit fill:#E8F5E9,stroke:#4CAF50,stroke-width:1px
+    classDef database fill:#FFF3E0,stroke:#FF9800,stroke-width:1px
+    classDef storage fill:#F3E5F5,stroke:#9C27B0,stroke-width:1px
+    classDef backup fill:#FFEBEE,stroke:#D32F2F,stroke-width:1px
+    classDef connection stroke:#666,stroke-width:2px,stroke-dasharray:5 5
+
+    class CLIENT,LB,API,MS,DB,DISK,BACKUP component
+    class EN_TRANSITO transit
+    class EN_BASE_DATOS database
+    class EN_ALMACENAMIENTO storage
+    class EN_BACKUPS backup
+    class T1,T2,T3 transit
+    class B1 database
+    class A1 storage
+    class BK1,BK2 backup
+
+    linkStyle 0,1,2,3,4,5 stroke:#1976D2,stroke-width:2px,stroke-dasharray:5 5
+        </pre>
+    </div>
+
+    <h3>Cifrado por Capa</h3>
+
+    <h4>1. Encryption in Transit</h4>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Conexión</th>
+                <th>Protocolo</th>
+                <th>Cipher Suite</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Client → LoadBalancer</strong></td>
+                <td>TLS 1.3</td>
+                <td>TLS_AES_256_GCM_SHA384</td>
+            </tr>
+            <tr>
+                <td><strong>LoadBalancer → API Gateway</strong></td>
+                <td>mTLS (Istio)</td>
+                <td>ECDHE-RSA-AES256-GCM-SHA384</td>
+            </tr>
+            <tr>
+                <td><strong>Service-to-Service</strong></td>
+                <td>mTLS (Istio)</td>
+                <td>Auto-rotación cada 1h</td>
+            </tr>
+            <tr>
+                <td><strong>App → PostgreSQL</strong></td>
+                <td>TLS 1.2+</td>
+                <td>ssl_prefer + verify-ca</td>
+            </tr>
+            <tr>
+                <td><strong>App → Redis</strong></td>
+                <td>TLS 1.2+</td>
+                <td>tls-auth-clients yes</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="code-block">
+        <h4>PostgreSQL TLS Configuration</h4>
+        <pre><code># postgresql.conf
+ssl = on
+ssl_cert_file = '/etc/ssl/certs/server.crt'
+ssl_key_file = '/etc/ssl/private/server.key'
+ssl_ca_file = '/etc/ssl/certs/ca.crt'
+
+# Requerir TLS para todas las conexiones
+ssl_min_protocol_version = 'TLSv1.2'
+ssl_prefer_server_ciphers = on
+ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL'
+
+# Connection string en aplicación
+DATABASE_URL=postgresql://user:pass@host:5432/db?sslmode=verify-full&sslrootcert=/path/to/ca.crt</code></pre>
+    </div>
+
+    <h4>2. Encryption at Rest</h4>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Componente</th>
+                <th>Método</th>
+                <th>Key Management</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>PostgreSQL</strong></td>
+                <td>TDE (Transparent Data Encryption)</td>
+                <td>AWS KMS / Vault Transit</td>
+            </tr>
+            <tr>
+                <td><strong>MongoDB (eventos)</strong></td>
+                <td>Encryption at Rest (WiredTiger)</td>
+                <td>AWS KMS</td>
+            </tr>
+            <tr>
+                <td><strong>Kubernetes Secrets</strong></td>
+                <td>etcd encryption at rest</td>
+                <td>KMS plugin</td>
+            </tr>
+            <tr>
+                <td><strong>EBS Volumes</strong></td>
+                <td>AES-256-XTS</td>
+                <td>AWS KMS</td>
+            </tr>
+            <tr>
+                <td><strong>S3 Backups</strong></td>
+                <td>SSE-KMS</td>
+                <td>AWS KMS + GPG envelope</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>3. Application-Level Encryption (Column Encryption)</h4>
+
+    <div class="code-block">
+        <pre>
+            <code>// Cifrado de datos sensibles en aplicación
+import crypto from 'crypto';
+
+class EncryptionService {
+  private algorithm = 'aes-256-gcm';
+  private keyId: string;
+
+  async encrypt(plaintext: string): Promise<EncryptedData> {
+    // Obtener DEK (Data Encryption Key) desde Vault
+    const dek = await this.vault.getDataKey(this.keyId);
+    
+    const iv = crypto.randomBytes(16);
+    const cipher = crypto.createCipheriv(this.algorithm, dek, iv);
+    
+    let ciphertext = cipher.update(plaintext, 'utf8', 'hex');
+    ciphertext += cipher.final('hex');
+    
+    const authTag = cipher.getAuthTag();
+
+    return {
+      ciphertext,
+      iv: iv.toString('hex'),
+      authTag: authTag.toString('hex'),
+      keyId: this.keyId,
+      algorithm: this.algorithm
+    };
+  }
+
+  async decrypt(encrypted: EncryptedData): Promise<string> {
+    const dek = await this.vault.getDataKey(encrypted.keyId);
+    
+    const decipher = crypto.createDecipheriv(
+      encrypted.algorithm,
+      dek,
+      Buffer.from(encrypted.iv, 'hex')
+    );
+    
+    decipher.setAuthTag(Buffer.from(encrypted.authTag, 'hex'));
+    
+    let plaintext = decipher.update(encrypted.ciphertext, 'hex', 'utf8');
+    plaintext += decipher.final('utf8');
+    
+    return plaintext;
+  }
+}
+
+// Uso en modelo de datos
+class User {
+  id: string;
+  email: string;  // Plain
+  ssn: EncryptedData;  // Cifrado
+  phone: EncryptedData;  // Cifrado
+  
+  async setSsn(ssn: string) {
+    this.ssn = await encryptionService.encrypt(ssn);
+  }
+  
+  async getSsn(): Promise<string> {
+    return encryptionService.decrypt(this.ssn);
+  }
+}
+</code>
+</pre>
+    </div>
+
+    <h4>Columnas Cifradas</h4>
+
+    <div class="note">
+        <strong>Datos que SIEMPRE se cifran a nivel aplicación:</strong>
+        <ul>
+            <li>🔐 <strong>PII:</strong> SSN, Pasaporte, Cédula</li>
+            <li>🔐 <strong>Datos Bancarios:</strong> Números de cuenta completos</li>
+            <li>🔐 <strong>Datos Biométricos:</strong> Embeddings faciales/huellas</li>
+            <li>🔐 <strong>Salud:</strong> Información médica (si aplica)</li>
+            <li>🔐 <strong>Credenciales:</strong> PINs, passwords (Bcrypt)</li>
+        </ul>
+    </div>
+</div>
+
+<h2>10.7 Detección de Amenazas y SIEM</h2>
+
+<div class="section">
+    <h3>Security Information and Event Management</h3>
+
+    <div class="diagram">
+        <h3>SIEM Architecture</h3>
+        <pre class="mermaid">
+graph LR
+    %% === FUENTES DE LOGS ===
+    subgraph FUENTES[🔍 Fuentes de Logs]
+        APP[📱 Aplicaciones]
+        WAF[🌐 Web Application Firewall]
+        API[🔌 API Gateway]
+        K8S[⚙️ Kubernetes]
+        DB[💾 Bases de Datos]
+        OS[🖥️ Sistemas Operativos]
+    end
+
+    %% === COLECTORES ===
+    subgraph COLECTORES[🔄 Colectores de Logs]
+        FB[Filebeat]
+        FL[Fluentd]
+    end
+
+    %% === PROCESAMIENTO ===
+    subgraph PROCESAMIENTO[⚡ Procesamiento]
+        LS[Logstash<br/>• Parseo<br/>• Enriquecimiento<br/>• Filtrado]
+        KF[Kafka<br/>Buffer de Mensajes]
+    end
+
+    %% === ALMACENAMIENTO ===
+    subgraph ALMACENAMIENTO[💾 Almacenamiento]
+        ES[Elasticsearch<br/>• Búsqueda<br/>• Indexación<br/>• Replicación]
+    end
+
+    %% === VISUALIZACIÓN ===
+    subgraph VISUALIZACION[📊 Visualización]
+        KB[Kibana<br/>• Dashboards<br/>• Discover<br/>• Visualizations]
+    end
+
+    %% === SEGURIDAD ===
+    subgraph SEGURIDAD[🛡️ Seguridad]
+        WZ[Wazuh<br/>• Threat Intelligence<br/>• Detección de Anomalías<br/>• Cumplimiento]
+    end
+
+    %% === ALERTAS ===
+    subgraph ALERTAS[🚨 Sistema de Alertas]
+        PD[PagerDuty]
+        SL[Slack]
+        EM[Email]
+    end
+
+    %% === CONEXIONES ===
+    APP --> FB
+    WAF --> FB
+    API --> FL
+    K8S --> FL
+    DB --> FB
+    OS --> FL
+
+    FB --> LS
+    FL --> LS
+    LS --> KF
+    KF --> ES
+    ES --> KB
+    KB --> WZ
+    WZ --> PD
+    WZ --> SL
+    WZ --> EM
+
+    %% === ESTILOS ===
+    classDef fuentes fill:#E3F2FD,stroke:#1976D2,stroke-width:2px
+    classDef colectores fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+    classDef procesamiento fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+    classDef almacenamiento fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px
+    classDef visualizacion fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+    classDef seguridad fill:#FFEBEE,stroke:#D32F2F,stroke-width:2px
+    classDef alertas fill:#FCE4EC,stroke:#C2185B,stroke-width:2px
+    classDef items fill:#FFFFFF,stroke:#666666,stroke-width:1px
+
+    class FUENTES fuentes
+    class COLECTORES colectores
+    class PROCESAMIENTO procesamiento
+    class ALMACENAMIENTO almacenamiento
+    class VISUALIZACION visualizacion
+    class SEGURIDAD seguridad
+    class ALERTAS alertas
+    class APP,WAF,API,K8S,DB,OS,FB,FL,LS,KF,ES,KB,WZ,PD,SL,EM items
+        </pre>
+    </div>
+
+    <h3>Eventos de Seguridad Monitoreados</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Categoría</th>
+                <th>Eventos</th>
+                <th>Severidad</th>
+                <th>Respuesta</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Autenticación</strong></td>
+                <td>
+                    • Múltiples login fallidos (5 en 5 min)<br>
+                    • Login desde IP nueva<br>
+                    • Login desde país no autorizado
+                </td>
+                <td>🔴 High</td>
+                <td>Block IP + Alert + Require MFA</td>
+            </tr>
+            <tr>
+                <td><strong>Autorización</strong></td>
+                <td>
+                    • Acceso denegado repetido<br>
+                    • Privilege escalation attempt<br>
+                    • Acceso a recursos no autorizados
+                </td>
+                <td>🔴 Critical</td>
+                <td>Block user + Alert Security Team</td>
+            </tr>
+            <tr>
+                <td><strong>Datos</strong></td>
+                <td>
+                    • Exportación masiva de datos<br>
+                    • Acceso a >100 cuentas en 1 hora<br>
+                    • Queries SQL sospechosas
+                </td>
+                <td>🔴 Critical</td>
+                <td>Block + Forensics + Incident</td>
+            </tr>
+            <tr>
+                <td><strong>Red</strong></td>
+                <td>
+                    • Port scanning<br>
+                    • DDoS attempts<br>
+                    • Conexiones a IPs maliciosas
+                </td>
+                <td>🟠 High</td>
+                <td>WAF Block + Alert</td>
+            </tr>
+            <tr>
+                <td><strong>Aplicación</strong></td>
+                <td>
+                    • SQL Injection attempts<br>
+                    • XSS attempts<br>
+                    • Path traversal attempts
+                </td>
+                <td>🟠 High</td>
+                <td>WAF Block + Log + Alert</td>
+            </tr>
+            <tr>
+                <td><strong>Infraestructura</strong></td>
+                <td>
+                    • Pod crashes frecuentes<br>
+                    • Unauthorized K8s API calls<br>
+                    • Container escape attempts
+                </td>
+                <td>🔴 Critical</td>
+                <td>Kill pod + Alert + Investigate</td>
+            </tr>
+            <tr>
+                <td><strong>Transacciones</strong></td>
+                <td>
+                    • Transferencias >$10k sin MFA<br>
+                    • Patrón inusual de transacciones<br>
+                    • Velocidad sospechosa
+                </td>
+                <td>🟡 Medium</td>
+                <td>Require additional auth</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>Wazuh Rules - Ejemplos</h4>
+
+    <div class="code-block">
+        <pre><code><!-- Detección de Brute Force -->
+<rule id="100010" level="10">
+  <if_matched_sid>5710</if_matched_sid>
+  <same_source_ip />
+  <description>Multiple authentication failures from same IP</description>
+  <frequency>5</frequency>
+  <timeframe>300</timeframe>
+  <group>authentication_failures,pci_dss_10.2.4,</group>
+</rule>
+
+<!-- Acceso desde país no autorizado -->
+<rule id="100020" level="12">
+  <if_sid>86002</if_sid>
+  <field name="geoip.country_code">!^(US|CA|MX|EC|CO|PE)$</field>
+  <description>Login from unauthorized country</description>
+  <group>authentication,geographic_restriction,</group>
+</rule>
+
+<!-- SQL Injection attempt -->
+<rule id="100030" level="12">
+  <decoded_as>web-log</decoded_as>
+  <match>union.*select|concat.*char|exec.*sp_|';.*drop.*table</match>
+  <description>Possible SQL injection attack</description>
+  <group>web,attack,sql_injection,</group>
+</rule>
+
+<!-- Exportación masiva de datos -->
+<rule id="100040" level="15">
+  <if_sid>31100</if_sid>
+  <field name="query_rows_returned">\d{4,}</field>
+  <frequency>10</frequency>
+  <timeframe>3600</timeframe>
+  <description>Massive data export detected</description>
+  <group>database,data_exfiltration,</group>
+</rule></code></pre>
+    </div>
+
+    <h3>Machine Learning - Anomaly Detection</h3>
+
+    <div class="success">
+        <strong>Elastic ML Jobs para Detección de Anomalías:</strong>
+        <ul>
+            <li><strong>User Behavior Analytics (UBA):</strong> Detectar patrones inusuales de usuario</li>
+            <li><strong>Network Traffic Analysis:</strong> Identificar tráfico anómalo</li>
+            <li><strong>Transaction Velocity:</strong> Velocidad inusual de transacciones</li>
+            <li><strong>Access Patterns:</strong> Horarios/ubicaciones fuera de lo normal</li>
+        </ul>
+    </div>
+</div>
+
+<h2>10.8 Gestión de Vulnerabilidades</h2>
+
+<div class="section">
+    <p>
+Este diagrama representa nuestro <strong>Pipeline de Seguridad Continua (Continuous Security Scanning)</strong>, 
+una estrategia integral que implementamos en cada etapa del ciclo de desarrollo. El flujo comienza con tres tipos 
+de escaneo automatizado: <strong>Análisis de Código (SAST/SCA)</strong>, <strong>Escaneo de Contenedores Docker</strong> 
+y <strong>Revisión de Infraestructura como Código</strong>. Todas las vulnerabilidades detectadas se consolidan en 
+una base de datos centralizada donde son evaluadas mediante scoring CVSS y priorizadas según su criticidad. 
+Finalmente, el sistema genera planes de remediación automatizados cuando es posible, o guía al equipo en la 
+resolución manual de issues de seguridad, asegurando compliance y reduciendo riesgos en producción.
+</p>
+</div>
+
+<div class="section">
+    <h3>Vulnerability Management Pipeline</h3>
+
+    <div class="diagram">
+        <pre class="mermaid">
+            graph TD
+    A[CONTINUOUS SECURITY SCANNING]
+    
+    subgraph SCANNING[🔍 Security Scanning]
+        B[CODE SCANNING]
+        C[DOCKER SCANNING]
+        D[INFRA SCANNING]
+    end
+
+    subgraph CODE[Code Analysis]
+        B1[• SAST]
+        B2[• SCA]
+        B3[• Semgrep]
+    end
+
+    subgraph DOCKER[Container Analysis]
+        C1[• Trivy]
+        C2[• Snyk]
+        C3[• Grype]
+    end
+
+    subgraph INFRA[Infrastructure Analysis]
+        D1[• Terraform]
+        D2[• Checkov]
+        D3[• tfsec]
+    end
+
+    E[VULNERABILITY DATABASE<br/>
+    • CVEs<br/>
+    • Risk Score CVSS<br/>
+    • Remediation Steps]
+    F[RISK ASSESSMENT<br/>• Prioritization<br/>• SLA Assignment]
+    G[REMEDIATION<br/>• Auto-patch<br/>• Manual fix<br/>• Risk acceptance]
+
+    A --> B
+    A --> C
+    A --> D
+    
+    B --> B1
+    B --> B2
+    B --> B3
+    
+    C --> C1
+    C --> C2
+    C --> C3
+    
+    D --> D1
+    D --> D2
+    D --> D3
+
+    B1 --> E
+    B2 --> E
+    B3 --> E
+    C1 --> E
+    C2 --> E
+    C3 --> E
+    D1 --> E
+    D2 --> E
+    D3 --> E
+
+    E --> F
+    F --> G
+
+    classDef main fill:#FFEBEE,stroke:#D32F2F,stroke-width:3px
+    classDef scanning fill:#E3F2FD,stroke:#1976D2,stroke-width:2px
+    classDef code fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px
+    classDef docker fill:#FFF3E0,stroke:#FF9800,stroke-width:2px
+    classDef infra fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px
+    classDef vuln fill:#E1F5FE,stroke:#0288D1,stroke-width:2px
+    classDef risk fill:#FFF9C4,stroke:#FBC02D,stroke-width:2px
+    classDef remediation fill:#E8F5E9,stroke:#2E7D32,stroke-width:2px
+    classDef tools fill:#FFFFFF,stroke:#666666,stroke-width:1px
+
+    class A main
+    class SCANNING scanning
+    class B,C,D scanning
+    class CODE code
+    class DOCKER docker
+    class INFRA infra
+    class E vuln
+    class F risk
+    class G remediation
+    class B1,B2,B3,C1,C2,C3,D1,D2,D3 tools
+        </pre>
+    </div>
+
+    <h3>Herramientas de Scanning</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Tipo</th>
+                <th>Herramienta</th>
+                <th>Frecuencia</th>
+                <th>Scope</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>SAST</strong> (Static Application Security Testing)</td>
+                <td>SonarQube, Semgrep</td>
+                <td>Cada commit</td>
+                <td>Código fuente</td>
+            </tr>
+            <tr>
+                <td><strong>SCA</strong> (Software Composition Analysis)</td>
+                <td>Snyk, npm audit, Dependabot</td>
+                <td>Cada build</td>
+                <td>Dependencias</td>
+            </tr>
+            <tr>
+                <td><strong>Container Scanning</strong></td>
+                <td>Trivy, Grype, Snyk Container</td>
+                <td>Cada imagen</td>
+                <td>Docker images</td>
+            </tr>
+            <tr>
+                <td><strong>IaC Scanning</strong></td>
+                <td>Checkov, tfsec, Terrascan</td>
+                <td>Cada PR</td>
+                <td>Terraform, K8s YAML</td>
+            </tr>
+            <tr>
+                <td><strong>DAST</strong> (Dynamic Application Security Testing)</td>
+                <td>OWASP ZAP, Burp Suite</td>
+                <td>Weekly</td>
+                <td>Running apps</td>
+            </tr>
+            <tr>
+                <td><strong>Secrets Scanning</strong></td>
+                <td>TruffleHog, GitGuardian</td>
+                <td>Cada commit</td>
+                <td>Git history</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>CI/CD Pipeline con Security Gates</h4>
+
+    <div class="code-block">
+        <pre><code># .github/workflows/security-scan.yml
+name: Security Scanning Pipeline
+
+on: [push, pull_request]
+
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run Semgrep
+        run: |
+          semgrep --config=auto --sarif > semgrep.sarif
+      
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: semgrep.sarif
+
+  sca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run Snyk
+        run: |
+          npx snyk test --severity-threshold=high
+          
+      - name: Npm Audit
+        run: npm audit --audit-level=moderate
+
+  container-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build image
+        run: docker build -t app:${{ github.sha }} .
+      
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'app:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'  # Fallar si hay vulnerabilidades
+
+  iac-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: ./terraform
+          framework: terraform
+          soft_fail: false  # Fallar en vulnerabilidades
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Full history
+      
+      - name: TruffleHog Scan
+        run: |
+          trufflehog git file://. --json > trufflehog-results.json
+          
+      - name: Fail if secrets found
+        run: |
+          if [ -s trufflehog-results.json ]; then
+            echo "Secrets found!"
+            exit 1
+          fi</code></pre>
+    </div>
+
+    <h3>SLA de Remediation</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Severidad CVSS</th>
+                <th>Score</th>
+                <th>SLA</th>
+                <th>Acción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>🔴 Critical</strong></td>
+                <td>9.0 - 10.0</td>
+                <td>24 horas</td>
+                <td>Hotfix inmediato + Post-mortem</td>
+            </tr>
+            <tr>
+                <td><strong>🟠 High</strong></td>
+                <td>7.0 - 8.9</td>
+                <td>7 días</td>
+                <td>Patch en próximo release</td>
+            </tr>
+            <tr>
+                <td><strong>🟡 Medium</strong></td>
+                <td>4.0 - 6.9</td>
+                <td>30 días</td>
+                <td>Incluir en backlog</td>
+            </tr>
+            <tr>
+                <td><strong>🟢 Low</strong></td>
+                <td>0.1 - 3.9</td>
+                <td>90 días</td>
+                <td>Opcional / Risk acceptance</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<h2>10.9 Respuesta a Incidentes</h2>
+<div class="section">
+    <h3>Incident Response Plan (IRP)</h3>
+
+    <div class="section">
+    <p>
+Este diagrama describe nuestro <strong>Proceso de Respuesta a Incidentes de Seguridad</strong>, 
+estructurado en seis fases críticas basadas en el framework NIST. Comenzando con la <strong>Preparación</strong> 
+proactiva del equipo y herramientas, el flujo avanza hacia la <strong>Detección y Análisis</strong> mediante 
+monitoreo continuo e inteligencia de amenazas. La fase de <strong>Contención</strong> actúa inmediatamente 
+para limitar el impacto, seguida de la <strong>Erradicación</strong> completa de la causa raíz. El 
+<strong>Recuperación</strong> asegura el retorno seguro a operaciones normales, culminando con el 
+<strong>Análisis Post-Incidente</strong> para mejorar continuamente nuestras defensas y procedimientos.
+</p>
+</div>
+
+    <div class="diagram">
+        <h3>NIST Incident Response Lifecycle</h3>
+        <pre class="mermaid">
+flowchart TD
+ subgraph PROCESS["🚨 INCIDENT RESPONSE PROCESS"]
+        A["🛡️ 1. PREPARATION"]
+        B["🔍 2. DETECTION & ANALYSIS"]
+        C["🚫 3. CONTAINMENT"]
+        D["🧹 4. ERADICATION"]
+        E["🔄 5. RECOVERY"]
+        F["📊 6. POST-INCIDENT REVIEW"]
+  end
+ subgraph A_Details["Preparation Details"]
+        A1["👥 IR Team Activation"]
+        A2["📚 Runbooks & Playbooks"]
+        A3["🛠️ Tools & Systems Ready"]
+        A4["📞 Contact List Updated"]
+  end
+ subgraph B_Details["Detection & Analysis"]
+        B1["⚠️ SIEM Alerts"]
+        B2["📋 Log Analysis & Forensics"]
+        B3["👤 User Reports & Escalations"]
+        B4["🌐 Threat Intelligence Feeds"]
+  end
+ subgraph C_Details["Containment Actions"]
+        C1["🖥️ Isolate Affected Systems"]
+        C2["🌐 Block Malicious IPs/Domains"]
+        C3["🔐 Revoke Compromised Credentials"]
+        C4["📊 Preserve Evidence"]
+  end
+ subgraph D_Details["Eradication Steps"]
+        D1["🐛 Remove Malware & Artifacts"]
+        D2["🔧 Patch Vulnerabilities"]
+        D3["🔑 Reset Passwords & Keys"]
+        D4["🏗️ Rebuild Compromised Systems"]
+  end
+ subgraph E_Details["Recovery Process"]
+        E1["💾 Restore from Clean Backups"]
+        E2["👀 Intensive Monitoring"]
+        E3["📈 Gradual Service Restoration"]
+        E4["✅ Validate System Integrity"]
+  end
+ subgraph F_Details["Post-Incident Activities"]
+        F1["📝 Comprehensive Post-Mortem"]
+        F2["⚙️ Update Procedures & Runbooks"]
+        F3["📋 Regulatory Reporting"]
+        F4["🛡️ Enhance Security Controls"]
+  end
+    A --> B & A_Details
+    B --> C & B_Details
+    C --> D & C_Details
+    D --> E & D_Details
+    E --> F & E_Details
+    F --> F_Details
+
+     A:::phase
+     B:::phase
+     C:::phase
+     D:::phase
+     E:::phase
+     F:::phase
+     A1:::details
+     A2:::details
+     A3:::details
+     A4:::details
+     B1:::details
+     B2:::details
+     B3:::details
+     B4:::details
+     C1:::details
+     C2:::details
+     C3:::details
+     C4:::details
+     D1:::details
+     D2:::details
+     D3:::details
+     D4:::details
+     E1:::details
+     E2:::details
+     E3:::details
+     E4:::details
+     F1:::details
+     F2:::details
+     F3:::details
+     F4:::details
+     A_Details:::preparation
+     B_Details:::detection
+     C_Details:::containment
+     D_Details:::eradication
+     E_Details:::recovery
+     F_Details:::postincident
+    classDef process fill:#1565C0,stroke:#1976D2,stroke-width:3px,color:#FFFFFF
+    classDef phase fill:#E3F2FD,stroke:#1976D2,stroke-width:3px,rx:10,ry:10
+    classDef preparation fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,rx:8,ry:8
+    classDef detection fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,rx:8,ry:8
+    classDef containment fill:#FFEBEE,stroke:#D32F2F,stroke-width:2px,rx:8,ry:8
+    classDef eradication fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,rx:8,ry:8
+    classDef recovery fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,rx:8,ry:8
+    classDef postincident fill:#E1F5FE,stroke:#0288D1,stroke-width:2px,rx:8,ry:8
+    classDef details fill:#FAFAFA,stroke:#BDBDBD,stroke-width:1px,rx:5,ry:5
+    style PROCESS stroke:#C8E6C9,fill:#C8E6C9
+
+
+
+</pre>
+    </div>
+
+    <h3>Incident Response Team</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Rol</th>
+                <th>Responsabilidades</th>
+                <th>Contact</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Incident Commander</strong></td>
+                <td>Toma decisiones, coordina respuesta</td>
+                <td>On-call 24/7</td>
+            </tr>
+            <tr>
+                <td><strong>Security Lead</strong></td>
+                <td>Análisis técnico, forensics</td>
+                <td>PagerDuty P1</td>
+            </tr>
+            <tr>
+                <td><strong>DevOps Lead</strong></td>
+                <td>Containment, recovery de sistemas</td>
+                <td>PagerDuty P1</td>
+            </tr>
+            <tr>
+                <td><strong>Legal/Compliance</strong></td>
+                <td>Requerimientos regulatorios, notificaciones</td>
+                <td>Email + Phone</td>
+            </tr>
+            <tr>
+                <td><strong>Communications</strong></td>
+                <td>Comunicación con clientes, PR</td>
+                <td>Email + Phone</td>
+            </tr>
+            <tr>
+                <td><strong>Executive Sponsor</strong></td>
+                <td>Aprobaciones, escalamiento</td>
+                <td>Critical only</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Incident Severity Levels</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Level</th>
+                <th>Descripción</th>
+                <th>Response Time</th>
+                <th>Ejemplos</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>🔴 P0 - Critical</strong></td>
+                <td>Breach activo, data loss, servicio completamente caído</td>
+                <td>15 minutos</td>
+                <td>Ransomware, Exfiltración de datos, Total outage</td>
+            </tr>
+            <tr>
+                <td><strong>🟠 P1 - High</strong></td>
+                <td>Intrusión detectada, servicio degradado significativamente</td>
+                <td>1 hora</td>
+                <td>Compromiso de cuenta admin, DDoS attack</td>
+            </tr>
+            <tr>
+                <td><strong>🟡 P2 - Medium</strong></td>
+                <td>Actividad sospechosa, vulnerabilidad crítica descubierta</td>
+                <td>4 horas</td>
+                <td>Múltiples login failures, Port scanning</td>
+            </tr>
+            <tr>
+                <td><strong>🟢 P3 - Low</strong></td>
+                <td>Anomalía menor, sin impacto inmediato</td>
+                <td>24 horas</td>
+                <td>Single failed login, Minor config issue</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Incident Runbooks - Ejemplos</h3>
+
+    <div class="code-block">
+        <h4>Runbook: Compromiso de Cuenta de Usuario</h4>
+        <pre>## P1 - Account Compromise
+
+### Detección
+- SIEM Alert: Multiple logins from different countries
+- User report: Unauthorized transactions
+
+### Respuesta Inmediata (< 15 min)
+1. **Disable Account**
+   ```bash
+   kubectl exec -it keycloak-0 -- \
+     /opt/keycloak/bin/kcadm.sh update users/USER_ID \
+     -s enabled=false
+   ```
+
+2. **Revoke All Sessions**
+   ```bash
+   redis-cli KEYS "session:USER_ID:*" | xargs redis-cli DEL
+   ```
+
+3. **Block Source IPs**
+   ```bash
+   # En Cloudflare WAF
+   cf-cli firewall create-rule \
+     --expression "ip.src == MALICIOUS_IP" \
+     --action block
+   ```
+
+### Investigación (< 1 hora)
+4. **Collect Logs**
+   ```bash
+   # Últimas 24h de actividad
+   curl -X POST "elastic:9200/logs-*/_search" -d '{
+     "query": {
+       "bool": {
+         "must": [
+           {"term": {"user_id": "USER_ID"}},
+           {"range": {"@timestamp": {"gte": "now-24h"}}}
+         ]
+       }
+     }
+   }'
+   ```
+
+5. **Timeline de Eventos**
+   - Login times & locations
+   - API calls realizados
+   - Transacciones ejecutadas
+   - Cambios de configuración
+
+### Containment (< 2 horas)
+6. **Revert Unauthorized Changes**
+   - Rollback transactions (si es posible)
+   - Revertir cambios de permisos
+   - Notificar a compliance
+
+7. **Reset Credentials**
+   - Force password reset
+   - Regenerate API keys
+   - Rotate encryption keys si es necesario
+
+### Notificaciones
+8. **Comunicación**
+   - Cliente: Email + SMS dentro de 1 hora
+   - Compliance: Reporte dentro de 72 horas (GDPR)
+   - Regulador: Si >500 usuarios afectados
+
+### Post-Mortem (< 5 días)
+9. **Lessons Learned**
+   - ¿Cómo ocurrió el compromiso?
+   - ¿Qué controles fallaron?
+   - Acciones correctivas</pre>
+    </div>
+
+    <div class="warning">
+        <strong>⚠️ Compliance Requirements:</strong>
+        <ul>
+            <li><strong>GDPR:</strong> Notificar breach a autoridad dentro de 72 horas</li>
+            <li><strong>PCI DSS:</strong> Notificar a brands de tarjetas inmediatamente</li>
+            <li><strong>GLBA:</strong> Notificar a clientes "tan pronto como sea posible"</li>
+            <li><strong>SOX:</strong> Documentar controles que fallaron</li>
+        </ul>
+    </div>
+</div>
+
+<h2>10.10 Security Hardening</h2>
+
+<div class="section">
+    <h3>Hardening Checklist</h3>
+
+    <h4>1. Kubernetes Hardening</h4>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Control</th>
+                <th>Configuración</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>RBAC Enabled</strong></td>
+                <td>Least privilege por defecto</td>
+                <td>OK</td>
+            </tr>
+            <tr>
+                <td><strong>Pod Security Policies</strong></td>
+                <td>Restringir privileged, hostPath, hostNetwork</td>
+                <td>OK</td>
+            </tr>
+            <tr>
+                <td><strong>Network Policies</strong></td>
+                <td>Deny all por defecto, allow explícito</td>
+                <td>OK</td>
+            </tr>
+            <tr>
+                <td><strong>Secrets Encryption</strong></td>
+                <td>etcd encryption at rest</td>
+                <td>OK</td>
+            </tr>
+            <tr>
+                <td><strong>Admission Controllers</strong></td>
+                <td>PodSecurityPolicy, ImagePolicyWebhook</td>
+                <td>OK</td>
+            </tr>
+            <tr>
+                <td><strong>Audit Logging</strong></td>
+                <td>Log all API server requests</td>
+                <td>OK</td>
+            </tr>
+            <tr>
+                <td><strong>Image Scanning</strong></td>
+                <td>Bloquear imágenes con CVE Critical/High</td>
+                <td>OK</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h4>2. Container Hardening</h4>
+
+    <div class="code-block">
+        <h4>Dockerfile Hardened - Best Practices</h4>
+        <pre><code># Multi-stage build
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Runtime image - distroless
+FROM gcr.io/distroless/nodejs18-debian11
+
+# Non-root user
+USER nonroot:nonroot
+
+# Read-only root filesystem
+WORKDIR /app
+COPY --from=builder --chown=nonroot:nonroot /app/node_modules ./node_modules
+COPY --chown=nonroot:nonroot . .
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD ["/nodejs/bin/node", "healthcheck.js"]
+
+# Drop all capabilities
+# Run with --cap-drop=ALL --security-opt=no-new-privileges
+
+EXPOSE 3000
+CMD ["index.js"]</code></pre>
+    </div>
+
+    <div class="code-block">
+        <h4>Kubernetes SecurityContext</h4>
+        <pre><code>apiVersion: v1
+kind: Pod
+metadata:
+  name: accounts-service
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+    seccompProfile:
+      type: RuntimeDefault
+  
+  containers:
+  - name: app
+    image: accounts-service:v1.2.0
+    
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL  # Drop todas las capabilities
+    
+    resources:
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+    
+    volumeMounts:
+    - name: tmp
+      mountPath: /tmp
+      readOnly: false  # Solo /tmp es writable
+  
+  volumes:
+  - name: tmp
+    emptyDir: {}</code></pre>
+    </div>
+
+    <h4>3. Database Hardening (PostgreSQL)</h4>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Control</th>
+                <th>Configuración</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Strong Authentication</strong></td>
+                <td>SCRAM-SHA-256, no MD5</td>
+            </tr>
+            <tr>
+                <td><strong>Row-Level Security</strong></td>
+                <td>Enabled en todas las tablas sensibles</td>
+            </tr>
+            <tr>
+                <td><strong>SSL/TLS</strong></td>
+                <td>sslmode=verify-full requerido</td>
+            </tr>
+            <tr>
+                <td><strong>Audit Logging</strong></td>
+                <td>pgAudit extension habilitada</td>
+            </tr>
+            <tr>
+                <td><strong>Least Privilege</strong></td>
+                <td>Roles separados por microservicio</td>
+            </tr>
+            <tr>
+                <td><strong>Connection Limits</strong></td>
+                <td>max_connections por usuario</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="code-block">
+        <pre><code>-- pg_hba.conf - Solo SSL
+hostssl all all 0.0.0.0/0 scram-sha-256
+
+-- postgresql.conf
+ssl = on
+ssl_ciphers = 'HIGH:MEDIUM:+3DES:!aNULL'
+password_encryption = scram-sha-256
+
+-- Row-Level Security
+CREATE POLICY user_data_policy ON accounts
+  USING (account_owner_id = current_setting('app.user_id')::uuid);
+
+ALTER TABLE accounts ENABLE ROW LEVEL SECURITY;
+
+-- Audit Logging (pgAudit)
+CREATE EXTENSION pgaudit;
+ALTER SYSTEM SET pgaudit.log = 'write, ddl';
+ALTER SYSTEM SET pgaudit.log_catalog = off;</code></pre>
+    </div>
+
+    <h4>4. API Gateway Hardening</h4>
+
+    <ul>
+        <li><strong>TLS 1.3 only:</strong> Deshabilitar TLS 1.0, 1.1, 1.2</li>
+        <li><strong>Strong Ciphers:</strong> Solo AEAD ciphers (GCM, ChaCha20-Poly1305)</li>
+        <li><strong>HSTS:</strong> Strict-Transport-Security con preload</li>
+        <li><strong>Security Headers:</strong> CSP, X-Frame-Options, X-Content-Type-Options</li>
+        <li><strong>CORS:</strong> Whitelist estricta de origins</li>
+        <li><strong>Rate Limiting:</strong> Por IP, por usuario, por endpoint</li>
+        <li><strong>Request Size Limits:</strong> Max 10MB por request</li>
+        <li><strong>Timeout:</strong> 30s max request timeout</li>
+    </ul>
+
+    <div class="success">
+        <h3>Security Posture Summary</h3>
+        <ul>
+            <li><strong>Defense in Depth:</strong> 7 capas de seguridad implementadas</li>
+            <li><strong>Zero Trust:</strong> mTLS, autenticación continua, micro-segmentación</li>
+            <li><strong>Encryption Everywhere:</strong> En tránsito (TLS/mTLS), en reposo (AES-256), en uso (columnas cifradas)</li>
+            <li><strong>Secrets Management:</strong> Vault + KMS, nunca en código</li>
+            <li><strong>Vulnerability Management:</strong> Scanning continuo, SLA de remediation</li>
+            <li><strong>SIEM:</strong> Wazuh + ELK, detección de amenazas 24/7</li>
+            <li><strong>Incident Response:</strong> Runbooks documentados, equipo on-call</li>
+            <li><strong>Compliance:</strong> PCI DSS, GDPR, SOX, GLBA, ISO 27001</li>
+        </ul>
+    </div>
+</div>
+
+<div class="footer">
+    <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 10 de 17</p>
+</div>
+    <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

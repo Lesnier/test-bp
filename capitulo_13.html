@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capítulo 13 - Gestión de Costos y Escalabilidad</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="nav-header">
+      <h2>Capítulo 13: Gestión de Costos y Escalabilidad</h2>
+      <div class="nav-buttons">
+        <a href="capitulo_12.html" class="nav-btn">← Anterior</a>
+        <a href="index.html" class="nav-btn">Índice</a>
+        <a href="capitulo_14.html" class="nav-btn">Siguiente →</a>
+      </div>
+    </div>
+
+    <h1>13. GESTIÓN DE COSTOS Y ESCALABILIDAD</h1>
+
+    <div class="section">
+      <p>
+        Una arquitectura de microservicios en la nube debe ser económicamente
+        viable y capaz de escalar con el crecimiento del negocio. Este capítulo
+        analiza los costos operacionales estimados, estrategias de optimización
+        y modelos de escalabilidad.
+      </p>
+    </div>
+
+    <h2>13.1 Estimación de Costos Mensuales</h2>
+
+    <div class="section">
+      <h3>13.1.1 Infraestructura Cloud Base (AWS EKS - Ejemplo)</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Componente</th>
+            <th>Especificación</th>
+            <th>Costo Mensual (USD)</th>
+            <th>Justificación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>EKS Control Plane</strong></td>
+            <td>1 cluster</td>
+            <td>$73</td>
+            <td>Costo fijo de Kubernetes managed</td>
+          </tr>
+          <tr>
+            <td><strong>Nodos EC2 Producción</strong></td>
+            <td>2x t3.xlarge (4vCPU, 16GB)</td>
+            <td>$300</td>
+            <td>Alta disponibilidad con 2 nodos</td>
+          </tr>
+          <tr>
+            <td><strong>Nodos EC2 Pre-Prod</strong></td>
+            <td>2x t3.large (2vCPU, 8GB)</td>
+            <td>$150</td>
+            <td>Ambiente staging realista</td>
+          </tr>
+          <tr>
+            <td><strong>Nodos EC2 Dev/QA</strong></td>
+            <td>1x t3.medium (2vCPU, 4GB)</td>
+            <td>$40</td>
+            <td>Ambiente compartido Dev+QA</td>
+          </tr>
+          <tr>
+            <td><strong>RDS PostgreSQL Primary</strong></td>
+            <td>db.r5.large Multi-AZ</td>
+            <td>$350</td>
+            <td>Base transaccional con failover</td>
+          </tr>
+          <tr>
+            <td><strong>RDS Read Replicas</strong></td>
+            <td>2x db.r5.large</td>
+            <td>$350</td>
+            <td>Distribución de lecturas CQRS</td>
+          </tr>
+          <tr>
+            <td><strong>ElastiCache Redis</strong></td>
+            <td>cache.r5.large (2 nodos)</td>
+            <td>$200</td>
+            <td>Caché + sesiones + SAGA state</td>
+          </tr>
+          <tr>
+            <td><strong>MSK (Kafka Managed)</strong></td>
+            <td>3 nodos kafka.m5.large</td>
+            <td>$450</td>
+            <td>Message bus con HA</td>
+          </tr>
+          <tr>
+            <td><strong>S3 Storage</strong></td>
+            <td>500 GB + requests</td>
+            <td>$50</td>
+            <td>Backups + archivos + logs</td>
+          </tr>
+          <tr>
+            <td><strong>CloudWatch Logs</strong></td>
+            <td>50 GB/mes</td>
+            <td>$30</td>
+            <td>Logs centralizados</td>
+          </tr>
+          <tr>
+            <td><strong>Application Load Balancer</strong></td>
+            <td>1 ALB</td>
+            <td>$25</td>
+            <td>Distribución de tráfico</td>
+          </tr>
+          <tr>
+            <td><strong>NAT Gateway</strong></td>
+            <td>2 AZ</td>
+            <td>$90</td>
+            <td>Conectividad saliente segura</td>
+          </tr>
+          <tr>
+            <td><strong>Data Transfer</strong></td>
+            <td>1 TB egress</td>
+            <td>$90</td>
+            <td>Transferencia de datos a internet</td>
+          </tr>
+          <tr>
+            <td><strong>Elasticsearch Service</strong></td>
+            <td>3 nodos m5.large</td>
+            <td>$400</td>
+            <td>Logs de auditoría + búsqueda</td>
+          </tr>
+          <tr>
+            <td><strong>Backup Storage (Glacier)</strong></td>
+            <td>1 TB</td>
+            <td>$15</td>
+            <td>Backups long-term</td>
+          </tr>
+          <tr>
+            <td><strong>Route 53</strong></td>
+            <td>Hosted zone + queries</td>
+            <td>$10</td>
+            <td>DNS management</td>
+          </tr>
+          <tr>
+            <td><strong>WAF Cloudflare</strong></td>
+            <td>Pro plan</td>
+            <td>$20</td>
+            <td>Protección DDoS + WAF</td>
+          </tr>
+          <tr>
+            <td><strong>Secrets Manager/Vault</strong></td>
+            <td>HashiCorp Vault Cloud</td>
+            <td>$80</td>
+            <td>Gestión de secretos</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="success">
+        <strong>Total Infraestructura Base (sin optimizar): ~$2,723/mes</strong
+        ><br />
+        <strong>Total Anual: ~$32,676/año</strong>
+      </div>
+
+      <h3>13.1.2 Servicios Externos y Herramientas</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Servicio</th>
+            <th>Propósito</th>
+            <th>Costo Mensual (USD)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Firebase (SMS + Push)</strong></td>
+            <td>Notificaciones móviles</td>
+            <td>$50 - $100</td>
+          </tr>
+          <tr>
+            <td><strong>Sentry</strong></td>
+            <td>Error tracking</td>
+            <td>$26</td>
+          </tr>
+          <tr>
+            <td><strong>PagerDuty</strong></td>
+            <td>Incident management</td>
+            <td>$50</td>
+          </tr>
+          <tr>
+            <td><strong>GitHub Enterprise</strong></td>
+            <td>Repositorios + CI/CD</td>
+            <td>$21/usuario (5 usuarios = $105)</td>
+          </tr>
+          <tr>
+            <td><strong>Datadog/NewRelic</strong></td>
+            <td>APM monitoring</td>
+            <td>$0 (usar Prometheus/Grafana)</td>
+          </tr>
+          <tr>
+            <td><strong>Auth0 (alternativa)</strong></td>
+            <td>OAuth 2.0 managed</td>
+            <td>$0 (ya tienen OAuth)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="success">
+        <strong>Total Servicios Externos: ~$200-$250/mes</strong>
+      </div>
+
+      <h3>13.1.3 Distribución de Costos</h3>
+
+      <div class="diagram">
+        <pre class="mermaid">
+pie title "_______Distribución de Costos Mensuales (Total: $2,923)"
+    "Compute (EC2/EKS)" : 636
+    "Bases de Datos (RDS+Redis)" : 900
+    "Mensajería (Kafka)" : 450
+    "Storage & Backup" : 75
+    "Networking (LB+NAT+Transfer)" : 205
+    "Observabilidad (ES+CW)" : 430
+    "Servicios Externos" : 227
+        </pre>
+      </div>
+    </div>
+
+    <h2>13.2 Comparativa de Cloud Providers</h2>
+
+    <div class="section">
+      <h3>13.2.1 AWS vs Azure vs GCP</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Servicio K8s</th>
+            <th>Costo Mensual</th>
+            <th>Pros</th>
+            <th>Cons</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>AWS</strong></td>
+            <td>EKS</td>
+            <td>$2,700 - $2,900</td>
+            <td>
+              • Más maduro y estable<br />
+              • Amplia documentación<br />
+              • Mayor adopción en LATAM<br />
+              • Servicios especializados
+            </td>
+            <td>
+              • Curva de aprendizaje<br />
+              • Costos pueden escalar rápido
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Azure</strong></td>
+            <td>AKS</td>
+            <td>$2,400 - $2,600</td>
+            <td>
+              • Control plane GRATIS<br />
+              • Integración Azure AD<br />
+              • Buen soporte<br />
+              • Precios competitivos
+            </td>
+            <td>
+              • Menos maduro que EKS<br />
+              • Documentación menor<br />
+              • Menos servicios especializados
+            </td>
+          </tr>
+          <tr>
+            <td><strong>GCP</strong></td>
+            <td>GKE</td>
+            <td>$2,500 - $2,700</td>
+            <td>
+              • Autopilot mode (managed)<br />
+              • Integración nativa K8s<br />
+              • Networking avanzado<br />
+              • Innovación continua
+            </td>
+            <td>
+              • Menor adopción en LATAM<br />
+              • Soporte limitado local<br />
+              • Menos partners
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="justification">
+        <div class="justification-title">Recomendación: AWS EKS</div>
+        <p><strong>Razones:</strong></p>
+        <ul>
+          <li>
+            <strong>Madurez:</strong> EKS es el servicio Kubernetes managed más
+            maduro del mercado
+          </li>
+          <li>
+            <strong>Ecosistema:</strong> Mayor cantidad de servicios
+            complementarios (MSK, RDS, ElastiCache)
+          </li>
+          <li>
+            <strong>Disponibilidad LATAM:</strong> Presencia en múltiples países
+            de la región
+          </li>
+          <li>
+            <strong>Documentación:</strong> Recursos abundantes en español
+          </li>
+          <li>
+            <strong>Soporte:</strong> Múltiples partners con experiencia en la
+            región
+          </li>
+        </ul>
+        <p>
+          <strong>Alternativa viable:</strong> Azure AKS por mejor relación
+          costo/beneficio (control plane gratis)
+        </p>
+      </div>
+
+      <h3>13.2.2 Comparativa Gráfica de Costos</h3>
+      <div class="section">
+        <p>
+          Esta tabla compara los tres principales proveedores de servicios de
+          Kubernetes en la nube: Amazon Web Services (AWS), Microsoft Azure y
+          Google Cloud Platform (GCP). Mientras AWS destaca por su madurez y su
+          extenso ecosistema de servicios, Azure compite fuertemente en precio,
+          y Google Cloud se enfoca en la innovación y la automatización con
+          funciones como el modo Autopilot.
+        </p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Característica</th>
+            <th>AWS (EKS)</th>
+            <th>Azure (AKS)</th>
+            <th>Google Cloud (GKE)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Costo Mensual Estimado</strong></td>
+            <td>$2,700 - $2,900</td>
+            <td>$2,400 - $2,600</td>
+            <td>$2,500 - $2,700</td>
+          </tr>
+          <tr>
+            <td><strong>Ventajas Clave</strong></td>
+            <td>
+              • Ecosistema de servicios más amplio.<br />• Plataforma con mayor
+              madurez.
+            </td>
+            <td>
+              • El "Control Plane" es gratuito.<br />• Generalmente el mejor
+              precio.
+            </td>
+            <td>
+              • Modo "Autopilot" para gestión simplificada.<br />• Constante
+              innovación y nuevas funciones.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>13.3 Estrategias de Optimización de Costos</h2>
+
+    <div class="section">
+      <h3>13.3.1 Técnicas de Reducción de Costos</h3>
+
+      <table class="optimization-table">
+        <thead>
+          <tr>
+            <th>Estrategia</th>
+            <th>Ahorro</th>
+            <th>Características</th>
+            <th>Aplicación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Reserved Instances</strong></td>
+            <td>40-60%</td>
+            <td>
+              • Compromiso de 1-3 años<br />
+              • Para cargas predecibles<br />
+              • Mayor descuento a mayor plazo
+            </td>
+            <td>Servidores de producción que corren 24/7</td>
+          </tr>
+          <tr>
+            <td><strong>Spot Instances</strong></td>
+            <td>70-90%</td>
+            <td>
+              • Puede interrumpirse<br />
+              • Sin compromiso<br />
+              • Precio variable
+            </td>
+            <td>Ambientes de desarrollo, pruebas y trabajos batch</td>
+          </tr>
+          <tr>
+            <td><strong>Right-Sizing</strong></td>
+            <td>15-25%</td>
+            <td>
+              • Análisis mensual de uso<br />
+              • Ajuste de capacidad<br />
+              • Monitoreo continuo
+            </td>
+            <td>Todos los recursos cloud (CPU, memoria, storage)</td>
+          </tr>
+          <tr>
+            <td><strong>Autoescalado</strong></td>
+            <td>40-60%</td>
+            <td>
+              • HPA + VPA<br />
+              • Escalado automático<br />
+              • Pago por uso real
+            </td>
+            <td>Microservicios y aplicaciones con carga variable</td>
+          </tr>
+          <tr>
+            <td><strong>Lifecycle Policies</strong></td>
+            <td>50-80%</td>
+            <td>
+              • Migración S3 → Glacier<br />
+              • Retención configurable<br />
+              • Archivado automático
+            </td>
+            <td>Logs antiguos, backups y datos históricos</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>13.3.2 Tabla de Optimizaciones</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Estrategia</th>
+            <th>Aplicación</th>
+            <th>Ahorro Estimado</th>
+            <th>Esfuerzo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Reserved Instances</strong></td>
+            <td>Nodos de producción (24/7)</td>
+            <td>$400/mes (40-60%)</td>
+            <td>Bajo</td>
+          </tr>
+          <tr>
+            <td><strong>Spot Instances</strong></td>
+            <td>Dev/QA/Batch jobs</td>
+            <td>$80/mes (70-90%)</td>
+            <td>Medio</td>
+          </tr>
+          <tr>
+            <td><strong>Right-Sizing</strong></td>
+            <td>Todos los recursos</td>
+            <td>$150/mes (15-25%)</td>
+            <td>Medio</td>
+          </tr>
+          <tr>
+            <td><strong>Autoescalado (HPA/VPA)</strong></td>
+            <td>Microservicios</td>
+            <td>$300/mes (40-60%)</td>
+            <td>Alto</td>
+          </tr>
+          <tr>
+            <td><strong>S3 Lifecycle Policies</strong></td>
+            <td>Logs y backups antiguos</td>
+            <td>$50/mes (50-80%)</td>
+            <td>Bajo</td>
+          </tr>
+          <tr>
+            <td><strong>Eliminar recursos no usados</strong></td>
+            <td>Snapshots, IPs elásticas, etc.</td>
+            <td>$30/mes</td>
+            <td>Bajo</td>
+          </tr>
+          <tr>
+            <td><strong>Compresión de datos</strong></td>
+            <td>Storage y transfer</td>
+            <td>$40/mes</td>
+            <td>Medio</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="success">
+        <strong>Ahorro Total con Optimizaciones: ~$1,050/mes</strong><br />
+        <strong
+          >Costo Optimizado: $2,923 - $1,050 = ~$1,873/mes
+          (~$22,476/año)</strong
+        ><br />
+        <strong>Reducción: 36% de ahorro</strong>
+      </div>
+    </div>
+
+    <h2>13.4 Modelo de Escalabilidad</h2>
+
+    <div class="section">
+      <h3>13.4.1 Crecimiento de Costos vs Usuarios</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Usuarios Activos</th>
+            <th>Transacciones/día</th>
+            <th>Nodos K8s</th>
+            <th>Pods/Servicio</th>
+            <th>Costo Mensual</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1,000 - 10,000</td>
+            <td>1K - 10K</td>
+            <td>2 (prod) + 2 (pre) + 1 (dev)</td>
+            <td>2-3</td>
+            <td>$1,900</td>
+          </tr>
+          <tr>
+            <td>10,000 - 50,000</td>
+            <td>10K - 50K</td>
+            <td>3 (prod) + 2 (pre) + 1 (dev)</td>
+            <td>3-5</td>
+            <td>$3,500</td>
+          </tr>
+          <tr>
+            <td>50,000 - 200,000</td>
+            <td>50K - 200K</td>
+            <td>6 (prod) + 3 (pre) + 1 (dev)</td>
+            <td>5-10</td>
+            <td>$8,000</td>
+          </tr>
+          <tr>
+            <td>200,000 - 1M</td>
+            <td>200K - 1M</td>
+            <td>10+ (prod multi-region)</td>
+            <td>10-20</td>
+            <td>$15,000+</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>13.4.2 Escalabilidad Horizontal</h3>
+
+      <p>
+        La arquitectura de microservicios permite escalabilidad lineal sin
+        necesidad de re-arquitectura:
+      </p>
+
+      <div class="diagram">
+        <pre class="mermaid">
+sequenceDiagram
+    participant U as Usuarios
+    participant K as Kubernetes
+    participant HPA as HPA
+    participant P as Pods
+    participant N as Nodos
+    
+    U->>K: Carga aumenta
+    K->>HPA: Monitorea métricas
+    HPA->>HPA: CPU > 70%
+    HPA->>P: Scale UP: 2→4 pods
+    P->>K: Pods desplegados
+    
+    Note over U,K: Si nodos saturados
+    K->>N: Cluster Autoscaler
+    N->>N: Agrega nuevo nodo
+    N->>K: Nodo ready
+    K->>P: Redistribuye pods
+    
+    Note over U,K: Carga disminuye
+    HPA->>P: Scale DOWN: 4→2 pods
+    K->>N: Remove idle node
+        </pre>
+      </div>
+
+      <h3>13.4.3 Dimensionamiento por Carga</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Usuarios Activos</th>
+            <th>Transacciones/día</th>
+            <th>Nodos K8s</th>
+            <th>Pods/Servicio</th>
+            <th>Costo Mensual</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1,000 - 10,000</td>
+            <td>1K - 10K</td>
+            <td>2 (prod) + 2 (pre) + 1 (dev)</td>
+            <td>2-3</td>
+            <td>$1,900</td>
+          </tr>
+          <tr>
+            <td>10,000 - 50,000</td>
+            <td>10K - 50K</td>
+            <td>3 (prod) + 2 (pre) + 1 (dev)</td>
+            <td>3-5</td>
+            <td>$3,500</td>
+          </tr>
+          <tr>
+            <td>50,000 - 200,000</td>
+            <td>50K - 200K</td>
+            <td>6 (prod) + 3 (pre) + 1 (dev)</td>
+            <td>5-10</td>
+            <td>$8,000</td>
+          </tr>
+          <tr>
+            <td>200,000 - 1M</td>
+            <td>200K - 1M</td>
+            <td>10+ (prod multi-region)</td>
+            <td>10-20</td>
+            <td>$15,000+</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>Crecimiento Lineal:</strong> Los costos escalan linealmente con
+        el número de usuarios, sin necesidad de cambios arquitectónicos
+        significativos.
+      </div>
+    </div>
+
+    <h2>13.5 ROI (Retorno de Inversión)</h2>
+
+    <div class="section">
+      <h3>13.5.1 Costos vs Monolito Tradicional</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Aspecto</th>
+            <th>Microservicios Cloud</th>
+            <th>Monolito On-Premise</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Costo Inicial</strong></td>
+            <td>$50,000</td>
+            <td>$200,000+</td>
+          </tr>
+          <tr>
+            <td><strong>Costo Operacional</strong></td>
+            <td>$24,000/año</td>
+            <td>$60,000/año</td>
+          </tr>
+          <tr>
+            <td><strong>Time-to-Market</strong></td>
+            <td>4-6 meses</td>
+            <td>12-18 meses</td>
+          </tr>
+          <tr>
+            <td><strong>Escalabilidad</strong></td>
+            <td>Ilimitada</td>
+            <td>Limitada</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>13.5.2 Análisis de 3 Años</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Microservicios Cloud</th>
+            <th>Monolito On-Premise</th>
+            <th>Diferencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Inversión Inicial (Año 0)</strong></td>
+            <td>$50,000</td>
+            <td>$200,000</td>
+            <td>-$150,000</td>
+          </tr>
+          <tr>
+            <td><strong>Costos Operacionales (Año 1)</strong></td>
+            <td>$24,000</td>
+            <td>$60,000</td>
+            <td>-$36,000</td>
+          </tr>
+          <tr>
+            <td><strong>Costos Operacionales (Año 2)</strong></td>
+            <td>$30,000</td>
+            <td>$60,000</td>
+            <td>-$30,000</td>
+          </tr>
+          <tr>
+            <td><strong>Costos Operacionales (Año 3)</strong></td>
+            <td>$36,000</td>
+            <td>$60,000</td>
+            <td>-$24,000</td>
+          </tr>
+          <tr>
+            <td><strong>TOTAL 3 AÑOS</strong></td>
+            <td><strong>$140,000</strong></td>
+            <td><strong>$380,000</strong></td>
+            <td><strong>-$240,000 (63% ahorro)</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>13.5.3 Beneficios Adicionales</h3>
+
+      <div class="success">
+        <strong>ROI No-Tangible:</strong>
+        <ul>
+          <li>
+            <strong>Time-to-Market:</strong> 50% más rápido (6 meses vs 12
+            meses) = $200K en revenue anticipado
+          </li>
+          <li>
+            <strong>Uptime Mejorado:</strong> 99.9% vs 99% = $50K/año en
+            pérdidas evitadas
+          </li>
+          <li>
+            <strong>Developer Productivity:</strong> 30% más eficiente =
+            $100K/año en costos de desarrollo
+          </li>
+          <li>
+            <strong>Mejor UX:</strong> 30% mejora en conversión = $500K/año en
+            revenue adicional
+          </li>
+          <li>
+            <strong>Innovación Continua:</strong> Despliegues semanales vs
+            trimestrales
+          </li>
+        </ul>
+        <strong>ROI Total 3 Años: ~600%</strong>
+      </div>
+    </div>
+
+    <h2>13.6 Presupuesto Recomendado</h2>
+
+    <div class="section">
+      <h3>13.6.1 Desglose Anual</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th>Año 1</th>
+            <th>Año 2</th>
+            <th>Año 3</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Infraestructura Cloud</strong></td>
+            <td>$25,000</td>
+            <td>$30,000</td>
+            <td>$36,000</td>
+          </tr>
+          <tr>
+            <td><strong>Servicios Externos</strong></td>
+            <td>$2,400</td>
+            <td>$3,000</td>
+            <td>$3,600</td>
+          </tr>
+          <tr>
+            <td><strong>Licencias y Herramientas</strong></td>
+            <td>$2,400</td>
+            <td>$2,400</td>
+            <td>$2,400</td>
+          </tr>
+          <tr>
+            <td><strong>Compliance y Auditorías</strong></td>
+            <td>$200,000</td>
+            <td>$100,000</td>
+            <td>$100,000</td>
+          </tr>
+          <tr>
+            <td><strong>Desarrollo Inicial</strong></td>
+            <td>$400,000</td>
+            <td>$100,000</td>
+            <td>$100,000</td>
+          </tr>
+          <tr>
+            <td><strong>Equipo DevOps</strong></td>
+            <td>$240,000</td>
+            <td>$240,000</td>
+            <td>$240,000</td>
+          </tr>
+          <tr>
+            <td><strong>Contingencia (10%)</strong></td>
+            <td>$87,000</td>
+            <td>$47,500</td>
+            <td>$48,200</td>
+          </tr>
+          <tr>
+            <td><strong>TOTAL</strong></td>
+            <td><strong>$956,800</strong></td>
+            <td><strong>$522,900</strong></td>
+            <td><strong>$530,200</strong></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>Notas:</strong>
+        <ul>
+          <li>Año 1 incluye inversión inicial de desarrollo y setup</li>
+          <li>Año 2-3 solo operación y mantenimiento</li>
+          <li>Equipo DevOps: 3 ingenieros @ $80K/año cada uno</li>
+          <li>Compliance alto en Año 1 por certificaciones iniciales</li>
+        </ul>
+      </div>
+
+      <h3>13.6.2 Proyección de Crecimiento</h3>
+
+      <div class="diagram">
+        <pre class="mermaid">
+gantt
+    title Proyección de Usuarios y Costos
+    dateFormat YYYY-MM
+    section Usuarios
+    1K-10K usuarios     :2025-01, 6M
+    10K-50K usuarios    :2025-07, 6M
+    50K-200K usuarios   :2026-01, 12M
+    200K+ usuarios      :2027-01, 12M
+    section Costos Mensuales
+    $1,900/mes          :2025-01, 6M
+    $3,500/mes          :2025-07, 6M
+    $8,000/mes          :2026-01, 12M
+    $15,000/mes         :2027-01, 12M
+        </pre>
+      </div>
+    </div>
+
+    <h2>13.7 Estrategia de Monitoreo de Costos</h2>
+
+    <div class="section">
+      <h3>13.7.1 Herramientas de Cost Management</h3>
+
+      <div class="section">
+        <ul>
+          <li>
+            <strong>AWS Cost Explorer</strong> es ideal si se trabaja
+            exclusivamente dentro del ecosistema de AWS.
+          </li>
+          <li>
+            <strong>CloudHealth</strong> es la opción si tu empresa utiliza
+            múltiples proveedores de nube (como AWS, Azure y GCP) y necesitas
+            una vista unificada.
+          </li>
+          <li>
+            <strong>Kubecost</strong> es una herramienta especializada y muy
+            potente si tu mayor gasto está en contenedores y necesitas un
+            desglose granular a nivel de <strong>Kubernetes</strong>.
+          </li>
+          <li>
+            Los <strong>Dashboards a Medida</strong> representan la flexibilidad
+            total para crear una solución propia, aunque requiere más esfuerzo
+            de desarrollo.
+          </li>
+        </ul>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Herramienta</th>
+            <th>Características Principales</th>
+            <th>Enfoque Principal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>AWS Cost Explorer</strong></td>
+            <td>
+              • Análisis por servicio.<br />• Tendencias mensuales.<br />•
+              Forecasting de costos.
+            </td>
+            <td>Nativo de AWS</td>
+          </tr>
+          <tr>
+            <td><strong>CloudHealth</strong></td>
+            <td>
+              • Vista multi-nube.<br />• Recomendaciones de optimización.<br />•
+              Alertas de presupuesto.
+            </td>
+            <td>Multi-Nube</td>
+          </tr>
+          <tr>
+            <td><strong>Kubecost</strong></td>
+            <td>
+              • Costos por namespace y pod.<br />• Showback/Chargeback.<br />•
+              Optimización de Kubernetes.
+            </td>
+            <td>Kubernetes</td>
+          </tr>
+          <tr>
+            <td><strong>Dashboards a Medida</strong></td>
+            <td>
+              • Paneles en Grafana.<br />• Notificaciones en Slack.<br />•
+              Seguimiento de presupuesto.
+            </td>
+            <td>Solución Propia</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>13.7.2 Alertas de Presupuesto</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Umbral</th>
+            <th>Acción</th>
+            <th>Responsable</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>50% del presupuesto mensual</strong></td>
+            <td>Notificación informativa</td>
+            <td>DevOps Team</td>
+          </tr>
+          <tr>
+            <td><strong>75% del presupuesto mensual</strong></td>
+            <td>Revisar recursos no utilizados</td>
+            <td>DevOps Lead</td>
+          </tr>
+          <tr>
+            <td><strong>90% del presupuesto mensual</strong></td>
+            <td>Congelar creación de recursos</td>
+            <td>CTO</td>
+          </tr>
+          <tr>
+            <td><strong>100% del presupuesto mensual</strong></td>
+            <td>Escalamiento ejecutivo</td>
+            <td>CFO</td>
+          </tr>
+          <tr>
+            <td><strong>Anomalía: +50% en 24h</strong></td>
+            <td>Investigación inmediata</td>
+            <td>On-call Engineer</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>13.8 Recomendaciones Finales</h2>
+
+    <div class="section">
+      <div class="success">
+        <h3>Estrategia de Costos Recomendada</h3>
+        <ol>
+          <li>
+            <strong>Comenzar Pequeño:</strong> Iniciar con infraestructura
+            mínima ($1,900/mes) y escalar según demanda real
+          </li>
+          <li>
+            <strong>Implementar Autoescalado:</strong> HPA+VPA desde día 1 para
+            maximizar eficiencia
+          </li>
+          <li>
+            <strong>Reserved Instances:</strong> Después de 3 meses de operación
+            estable, comprar RIs para nodos base
+          </li>
+          <li>
+            <strong>Monitoreo Continuo:</strong> Dashboards de costos en tiempo
+            real con alertas automáticas
+          </li>
+          <li>
+            <strong>Revisión Mensual:</strong> Análisis de right-sizing y
+            eliminación de recursos no utilizados
+          </li>
+          <li>
+            <strong>Lifecycle Policies:</strong> Automatizar movimiento de datos
+            antiguos a storage económico
+          </li>
+          <li>
+            <strong>Multi-Cloud Evaluation:</strong> Evaluar alternativas cada
+            año para mantener competitividad
+          </li>
+        </ol>
+      </div>
+
+      <div class="note">
+        <strong>Punto de Equilibrio:</strong> Con ~5,000 usuarios activos y
+        crecimiento orgánico del 10% mensual, el sistema se paga solo en 18
+        meses considerando ahorros operacionales vs solución tradicional.
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 13 de 17</p>
+    </div>
+
+    <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

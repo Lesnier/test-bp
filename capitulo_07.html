@@ -1,631 +1,682 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Capítulo 7 - Sistema de Mensajería y Notificaciones</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-
-<div class="nav-header">
-    <h2>Capítulo 7: Sistema de Mensajería y Notificaciones</h2>
-    <div class="nav-buttons">
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="nav-header">
+      <h2>Capítulo 7: Sistema de Mensajería y Notificaciones</h2>
+      <div class="nav-buttons">
         <a href="capitulo_06.html" class="nav-btn">← Anterior</a>
         <a href="index.html" class="nav-btn">Índice</a>
         <a href="capitulo_08.html" class="nav-btn">Siguiente →</a>
-    </div>
-</div>
-
-<h1>7. SISTEMA DE MENSAJERÍA Y NOTIFICACIONES</h1>
-
-<h2>7.1 Arquitectura de Notificaciones Asíncronas</h2>
-
-<div class="section">
-    <p>El sistema de notificaciones debe ser <strong>escalable, confiable y asíncrono</strong> para no afectar la latencia de las transacciones principales. La arquitectura propuesta utiliza un modelo basado en eventos con procesamiento paralelo mediante Worker Threads.</p>
-
-    <div class="note">
-        <strong>Requisito Normativo:</strong> Las normativas bancarias exigen que los usuarios sean notificados sobre movimientos realizados mediante <strong>mínimo 2 canales</strong> de comunicación.
+      </div>
     </div>
 
-    <div class="diagram">
+    <h1>7. SISTEMA DE MENSAJERÍA Y NOTIFICACIONES</h1>
+
+    <h2>7.1 Arquitectura de Notificaciones Asíncronas</h2>
+
+    <div class="section">
+      <p>
+        El sistema de notificaciones debe ser
+        <strong>escalable, confiable y asíncrono</strong> para no afectar la
+        latencia de las transacciones principales. La arquitectura propuesta
+        utiliza un modelo basado en eventos con procesamiento paralelo mediante
+        Worker Threads.
+      </p>
+
+      <div class="note">
+        <strong>Requisito Normativo:</strong> Las normativas bancarias exigen
+        que los usuarios sean notificados sobre movimientos realizados mediante
+        <strong>mínimo 2 canales</strong> de comunicación.
+      </div>
+
+      <div class="diagram">
         <div class="diagram-title">Arquitectura Completa de Notificaciones</div>
-        <pre>
-┌─────────────────────────────────────────────────────────┐
-│           MICROSERVICIOS EMISORES                       │
-│  (MS-Pagos, MS-Autenticación, MS-Datos-Cliente, etc.)  │
-└────────────────────┬────────────────────────────────────┘
-                     │ Emit Event
-          ┌──────────▼──────────┐
-          │  KAFKA EVENT BUS    │
-          │ Topic: notifications│
-          └──────────┬──────────┘
-                     │ Consume Events
-          ┌──────────▼──────────────────┐
-          │  MS-NOTIFICACIONES          │
-          │  (Node.js + Worker Threads) │
-          │                             │
-          │  ┌────────────────────┐    │
-          │  │  Main Thread       │    │
-          │  │  - Consume Kafka   │    │
-          │  │  - Enqueue jobs    │    │
-          │  │  - Coordina workers│    │
-          │  └────────┬───────────┘    │
-          │           │                 │
-          │  ┌────────┴─────────────┐  │
-          │  │   Worker Thread Pool │  │
-          │  │   - Email Workers    │  │
-          │  │   - SMS Workers      │  │
-          │  │   - Push Workers     │  │
-          │  └──────────────────────┘  │
-          └──────────┬──────────────────┘
-                     │
-     ┌───────────────┼───────────────┐
-     │               │               │
-┌────▼─────┐  ┌─────▼──────┐  ┌────▼──────┐
-│Redis Queue│ │Redis Queue │ │Redis Queue│
-│  (Email)  │ │   (SMS)    │ │  (Push)   │
-└────┬─────┘  └─────┬──────┘  └────┬──────┘
-     │              │              │
-┌────▼─────┐  ┌─────▼──────┐  ┌────▼──────┐
-│ Mailpit  │  │  Firebase  │  │ Firebase  │
-│ (Dev) /  │  │   Cloud    │  │   Cloud   │
-│Nodemailer│  │ Messaging  │  │ Messaging │
-│  (Prod)  │  │   (SMS)    │  │   (Push)  │
-└──────────┘  └────────────┘  └───────────┘
+        <pre class="mermaid">
+graph TB
+    MICRO[MICROSERVICIOS EMISORES<br/>
+    MS-Pagos, 
+    MS-Autenticación<br/>
+    MS-Datos-Cliente, etc.]
+    
+    KAFKA[KAFKA EVENT BUS<br/>
+    Topic: notifications]
+    
+    MS_NOT[MS-NOTIFICACIONES<br/>
+    Node.js + Worker Threads]
+    
+    MAIN[Main Thread<br/>
+    • Consume Kafka<br/>
+    • Enqueue jobs<br/>
+    • Coordina workers]
+    
+    WORKERS[Worker Thread Pool<br/>
+    • Email Workers<br/>
+    • SMS Workers<br/>
+    • Push Workers]
+    
+    subgraph "REDIS QUEUES"
+        Q1[Redis Queue<br/>
+        Email]
+        Q2[Redis Queue<br/>
+        SMS]
+        Q3[Redis Queue<br/>
+        Push]
+    end
+    
+    subgraph "SERVICIOS EXTERNOS"
+        EMAIL[Mailpit Dev /<br/>Nodemailer Prod]
+        SMS[Firebase Cloud<br/>Messaging SMS]
+        PUSH[Firebase Cloud<br/>Messaging Push]
+    end
+    
+    MICRO -->|Emit Event| KAFKA
+    KAFKA -->|Consume Events| MS_NOT
+    MS_NOT --> MAIN
+    MAIN --> WORKERS
+    WORKERS --> Q1
+    WORKERS --> Q2
+    WORKERS --> Q3
+    
+    Q1 --> EMAIL
+    Q2 --> SMS
+    Q3 --> PUSH
+    
+    style MICRO fill:#667eea,stroke:#333,color:#fff
+    style KAFKA fill:#764ba2,stroke:#333,color:#fff
+    style MS_NOT fill:#4caf50,stroke:#333,color:#fff
+    style MAIN fill:#2196F3,stroke:#333,color:#fff
+    style WORKERS fill:#ff9800,stroke:#333,color:#fff
         </pre>
+      </div>
     </div>
-</div>
 
-<h2>7.2 Justificación de Tecnologías</h2>
+    <h2>7.2 Justificación de Tecnologías</h2>
 
-<div class="section">
-    <h3>7.2.1 Redis + Bull Queue</h3>
+    <div class="section">
+      <h3>7.2.1 Redis + Bull Queue</h3>
 
-    <div class="justification">
+      <div class="justification">
         <div class="justification-title">¿Por qué Redis + Bull Queue?</div>
-        
-        <p>Bull es una librería robusta de gestión de colas basada en Redis que proporciona:</p>
-        
-        <ul>
-            <li><strong>Procesamiento asíncrono:</strong> Las notificaciones no bloquean el flujo principal</li>
-            <li><strong>Reintentos automáticos:</strong> Si falla un envío, se reintenta con backoff exponencial</li>
-            <li><strong>Priorización de colas:</strong> Emails urgentes vs informativos</li>
-            <li><strong>Persistencia de jobs:</strong> No se pierden notificaciones en caso de caída</li>
-            <li><strong>Dashboard web:</strong> Bull Board para monitoreo visual de colas</li>
-            <li><strong>Delay scheduling:</strong> Envío diferido de notificaciones</li>
-            <li><strong>Rate limiting:</strong> Control de throughput para evitar saturación</li>
-        </ul>
-    </div>
 
-    <table>
+        <p>
+          Bull es una librería robusta de gestión de colas basada en Redis que
+          proporciona:
+        </p>
+
+        <ul>
+          <li>
+            <strong>Procesamiento asíncrono:</strong> Las notificaciones no
+            bloquean el flujo principal
+          </li>
+          <li>
+            <strong>Reintentos automáticos:</strong> Si falla un envío, se
+            reintenta con backoff exponencial
+          </li>
+          <li>
+            <strong>Priorización de colas:</strong> Emails urgentes vs
+            informativos
+          </li>
+          <li>
+            <strong>Persistencia de jobs:</strong> No se pierden notificaciones
+            en caso de caída
+          </li>
+          <li>
+            <strong>Dashboard web:</strong> Bull Board para monitoreo visual de
+            colas
+          </li>
+          <li>
+            <strong>Delay scheduling:</strong> Envío diferido de notificaciones
+          </li>
+          <li>
+            <strong>Rate limiting:</strong> Control de throughput para evitar
+            saturación
+          </li>
+        </ul>
+      </div>
+
+      <table>
         <thead>
-            <tr>
-                <th>Característica</th>
-                <th>Bull Queue</th>
-                <th>Alternativa (RabbitMQ)</th>
-            </tr>
+          <tr>
+            <th>Característica</th>
+            <th>Bull Queue</th>
+            <th>Alternativa (RabbitMQ)</th>
+          </tr>
         </thead>
         <tbody>
-            <tr>
-                <td><strong>Configuración</strong></td>
-                <td class="pros">Simple (solo Redis)</td>
-                <td class="cons">Compleja (broker separado)</td>
-            </tr>
-            <tr>
-                <td><strong>Performance</strong></td>
-                <td class="pros">10K+ jobs/segundo</td>
-                <td class="pros">15K+ jobs/segundo</td>
-            </tr>
-            <tr>
-                <td><strong>Persistencia</strong></td>
-                <td class="pros">Redis AOF/RDB</td>
-                <td class="pros">Disk persistence</td>
-            </tr>
-            <tr>
-                <td><strong>Monitoreo</strong></td>
-                <td class="pros">Bull Board (web UI)</td>
-                <td class="cons">Requiere plugin</td>
-            </tr>
-            <tr>
-                <td><strong>Costo operativo</strong></td>
-                <td class="pros">Bajo (reutiliza Redis)</td>
-                <td class="cons">Medio (infraestructura adicional)</td>
-            </tr>
+          <tr>
+            <td><strong>Configuración</strong></td>
+            <td class="pros">Simple (solo Redis)</td>
+            <td class="cons">Compleja (broker separado)</td>
+          </tr>
+          <tr>
+            <td><strong>Performance</strong></td>
+            <td class="pros">10K+ jobs/segundo</td>
+            <td class="pros">15K+ jobs/segundo</td>
+          </tr>
+          <tr>
+            <td><strong>Persistencia</strong></td>
+            <td class="pros">Redis AOF/RDB</td>
+            <td class="pros">Disk persistence</td>
+          </tr>
+          <tr>
+            <td><strong>Monitoreo</strong></td>
+            <td class="pros">Bull Board (web UI)</td>
+            <td class="cons">Requiere plugin</td>
+          </tr>
+          <tr>
+            <td><strong>Costo operativo</strong></td>
+            <td class="pros">Bajo (reutiliza Redis)</td>
+            <td class="cons">Medio (infraestructura adicional)</td>
+          </tr>
         </tbody>
-    </table>
+      </table>
 
-    <h3>7.2.2 Workers con Multithreading</h3>
+      <h3>7.2.2 Workers con Multithreading</h3>
 
-    <p>Node.js Worker Threads permite procesamiento paralelo de notificaciones:</p>
+      <p>
+        Node.js Worker Threads permite procesamiento paralelo de notificaciones:
+      </p>
 
-    <div class="diagram">
+      <div class="diagram">
         <div class="diagram-title">Worker Pool para Notificaciones</div>
-        <pre>
-┌──────────────────────────────────────────────────────┐
-│          MS-NOTIFICACIONES (Main Thread)             │
-│                                                      │
-│  Consume Kafka → Enqueue jobs → Coordina workers    │
-└────────────┬─────────────────────────────────────────┘
-             │
-    ┌────────┼─────────┬──────────┬──────────┐
-    │        │         │          │          │
-┌───▼────┐ ┌▼────────┐ ┌▼────────┐ ┌▼────────┐
-│Worker 1│ │Worker 2 │ │Worker 3 │ │Worker 4 │
-│Email   │ │Email    │ │SMS      │ │Push     │
-│Thread  │ │Thread   │ │Thread   │ │Thread   │
-└───┬────┘ └┬────────┘ └┬────────┘ └┬────────┘
-    │       │          │          │
-    └───────┴──────────┴──────────┘
-            │
-    Procesa 1000+ notificaciones/segundo
+        <pre class="mermaid">
+graph TB
+    MAIN[MS-NOTIFICACIONES<br/>
+    Main Thread<br/>
+    Consume&nbsp;Kafka&nbsp;→&nbsp;Enqueue&nbsp;jobs&nbsp;→&nbsp;Coordina&nbsp;workers]
+    
+    subgraph "WORKER THREAD POOL"
+        W1[Worker 1<br/>
+            Email Thread]
+        W2[Worker 2<br/>
+            Email Thread]
+        W3[Worker 3<br/>
+            SMS Thread]
+        W4[Worker 4<br/>
+            Push Thread]
+    end
+    
+    PROCESS[Procesa&nbsp;1000+&nbsp;notificaciones/segundo]
+    
+    MAIN --> W1
+    MAIN --> W2
+    MAIN --> W3
+    MAIN --> W4
+    
+    W1 --> PROCESS
+    W2 --> PROCESS
+    W3 --> PROCESS
+    W4 --> PROCESS
+    
+    style MAIN fill:#667eea,stroke:#333,color:#fff
+    style W1 fill:#4caf50,stroke:#333,color:#fff
+    style W2 fill:#4caf50,stroke:#333,color:#fff
+    style W3 fill:#ff9800,stroke:#333,color:#fff
+    style W4 fill:#2196F3,stroke:#333,color:#fff
+    style PROCESS fill:#764ba2,stroke:#333,color:#fff
         </pre>
-    </div>
+      </div>
 
-    <div class="success">
+      <div class="success">
         <strong>Beneficio del Multithreading:</strong>
         <ul>
-            <li>Procesamiento concurrente de miles de notificaciones sin bloquear el event loop</li>
-            <li>Cada worker thread puede procesar 250+ notificaciones/segundo</li>
-            <li>Escalabilidad vertical aprovechando múltiples cores del pod</li>
-            <li>Aislamiento: Si un worker falla, los demás continúan operando</li>
+          <li>
+            Procesamiento concurrente de miles de notificaciones sin bloquear el
+            event loop
+          </li>
+          <li>Cada worker thread puede procesar 250+ notificaciones/segundo</li>
+          <li>Escalabilidad vertical aprovechando múltiples cores del pod</li>
+          <li>Aislamiento: Si un worker falla, los demás continúan operando</li>
         </ul>
-    </div>
+      </div>
 
-    <h3>7.2.3 Firebase Cloud Messaging (SMS y Push)</h3>
+      <h3>7.2.3 Firebase Cloud Messaging (SMS y Push)</h3>
 
-    <div class="justification">
+      <div class="justification">
         <div class="justification-title">¿Por qué Firebase?</div>
-        
+
         <table>
-            <thead>
-                <tr>
-                    <th>Ventaja</th>
-                    <th>Descripción</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td><strong>Económico</strong></td>
-                    <td>Hasta 10,000 SMS gratis/mes. Push notifications ilimitadas gratis.</td>
-                </tr>
-                <tr>
-                    <td><strong>Alta tasa de entrega</strong></td>
-                    <td>99%+ de entrega exitosa para SMS y Push</td>
-                </tr>
-                <tr>
-                    <td><strong>API simple</strong></td>
-                    <td>SDK de Node.js bien documentado y fácil de integrar</td>
-                </tr>
-                <tr>
-                    <td><strong>Multi-país</strong></td>
-                    <td>Soporte para 200+ países sin configuración adicional</td>
-                </tr>
-                <tr>
-                    <td><strong>Integración directa</strong></td>
-                    <td>SDK en apps móviles para push notifications nativas</td>
-                </tr>
-            </tbody>
+          <thead>
+            <tr>
+              <th>Ventaja</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Económico</strong></td>
+              <td>
+                Hasta 10,000 SMS gratis/mes. Push notifications ilimitadas
+                gratis.
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Alta tasa de entrega</strong></td>
+              <td>99%+ de entrega exitosa para SMS y Push</td>
+            </tr>
+            <tr>
+              <td><strong>API simple</strong></td>
+              <td>SDK de Node.js bien documentado y fácil de integrar</td>
+            </tr>
+            <tr>
+              <td><strong>Multi-país</strong></td>
+              <td>Soporte para 200+ países sin configuración adicional</td>
+            </tr>
+            <tr>
+              <td><strong>Integración directa</strong></td>
+              <td>SDK en apps móviles para push notifications nativas</td>
+            </tr>
+          </tbody>
         </table>
-    </div>
+      </div>
 
-    <h3>7.2.4 Estrategia de Email</h3>
+      <h3>7.2.4 Estrategia de Email</h3>
 
-    <table>
+      <table>
         <thead>
-            <tr>
-                <th>Ambiente</th>
-                <th>Tecnología</th>
-                <th>Justificación</th>
-            </tr>
+          <tr>
+            <th>Ambiente</th>
+            <th>Tecnología</th>
+            <th>Justificación</th>
+          </tr>
         </thead>
         <tbody>
-            <tr>
-                <td><strong>Desarrollo</strong></td>
-                <td>Mailpit en contenedor Docker</td>
-                <td>
-                    <ul>
-                        <li>Interfaz web para visualizar emails sin enviarlos</li>
-                        <li>No requiere configuración SMTP real</li>
-                        <li>Ideal para testing de plantillas</li>
-                        <li>Cero costo</li>
-                    </ul>
-                </td>
-            </tr>
-            <tr>
-                <td><strong>Producción</strong></td>
-                <td>Nodemailer con SMTP propio</td>
-                <td>
-                    <ul>
-                        <li>No usar Amazon SES para evitar costos adicionales</li>
-                        <li>SMTP propio con dominio de la empresa</li>
-                        <li>Autenticación SPF + DKIM + DMARC para evitar spam</li>
-                        <li>Plantillas HTML con Handlebars</li>
-                        <li>Control total sobre infraestructura</li>
-                    </ul>
-                </td>
-            </tr>
+          <tr>
+            <td><strong>Desarrollo</strong></td>
+            <td>Mailpit en contenedor Docker</td>
+            <td>
+              <ul>
+                <li>Interfaz web para visualizar emails sin enviarlos</li>
+                <li>No requiere configuración SMTP real</li>
+                <li>Ideal para testing de plantillas</li>
+                <li>Cero costo</li>
+              </ul>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Producción</strong></td>
+            <td>Nodemailer con SMTP propio</td>
+            <td>
+              <ul>
+                <li>No usar Amazon SES para evitar costos adicionales</li>
+                <li>SMTP propio con dominio de la empresa</li>
+                <li>Autenticación SPF + DKIM + DMARC para evitar spam</li>
+                <li>Plantillas HTML con Handlebars</li>
+                <li>Control total sobre infraestructura</li>
+              </ul>
+            </td>
+          </tr>
         </tbody>
-    </table>
-</div>
+      </table>
+    </div>
 
-<h2>7.3 Tipos de Notificaciones</h2>
+    <h2>7.3 Tipos de Notificaciones</h2>
 
-<div class="section">
-    <table>
+    <div class="section">
+      <table>
         <thead>
-            <tr>
-                <th>Evento</th>
-                <th>Email</th>
-                <th>SMS</th>
-                <th>Push</th>
-                <th>Prioridad</th>
-                <th>Tiempo Máximo</th>
-            </tr>
+          <tr>
+            <th>Evento</th>
+            <th>Email</th>
+            <th>SMS</th>
+            <th>Push</th>
+            <th>Prioridad</th>
+            <th>Tiempo Máximo</th>
+          </tr>
         </thead>
         <tbody>
-            <tr>
-                <td><strong>Transferencia realizada</strong></td>
-                <td>✓</td>
-                <td>✓</td>
-                <td>✓</td>
-                <td>Alta</td>
-                <td>&lt; 30 segundos</td>
-            </tr>
-            <tr>
-                <td><strong>Login desde nuevo dispositivo</strong></td>
-                <td>✓</td>
-                <td>✓</td>
-                <td>✓</td>
-                <td>Crítica</td>
-                <td>&lt; 10 segundos</td>
-            </tr>
-            <tr>
-                <td><strong>Cambio de contraseña</strong></td>
-                <td>✓</td>
-                <td>✓</td>
-                <td>-</td>
-                <td>Crítica</td>
-                <td>&lt; 10 segundos</td>
-            </tr>
-            <tr>
-                <td><strong>Saldo bajo (alerta)</strong></td>
-                <td>✓</td>
-                <td>-</td>
-                <td>✓</td>
-                <td>Media</td>
-                <td>&lt; 5 minutos</td>
-            </tr>
-            <tr>
-                <td><strong>Recordatorio de pago</strong></td>
-                <td>✓</td>
-                <td>-</td>
-                <td>✓</td>
-                <td>Baja</td>
-                <td>&lt; 1 hora</td>
-            </tr>
-            <tr>
-                <td><strong>Promociones</strong></td>
-                <td>✓</td>
-                <td>-</td>
-                <td>✓</td>
-                <td>Baja</td>
-                <td>Best-effort</td>
-            </tr>
-            <tr>
-                <td><strong>Transferencia fallida</strong></td>
-                <td>✓</td>
-                <td>✓</td>
-                <td>✓</td>
-                <td>Alta</td>
-                <td>&lt; 1 minuto</td>
-            </tr>
-            <tr>
-                <td><strong>Actualización de app disponible</strong></td>
-                <td>-</td>
-                <td>-</td>
-                <td>✓</td>
-                <td>Baja</td>
-                <td>Best-effort</td>
-            </tr>
+          <tr>
+            <td><strong>Transferencia realizada</strong></td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>Alta</td>
+            <td>&lt; 30 segundos</td>
+          </tr>
+          <tr>
+            <td><strong>Login desde nuevo dispositivo</strong></td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>Crítica</td>
+            <td>&lt; 10 segundos</td>
+          </tr>
+          <tr>
+            <td><strong>Cambio de contraseña</strong></td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>-</td>
+            <td>Crítica</td>
+            <td>&lt; 10 segundos</td>
+          </tr>
+          <tr>
+            <td><strong>Saldo bajo (alerta)</strong></td>
+            <td>✔</td>
+            <td>-</td>
+            <td>✔</td>
+            <td>Media</td>
+            <td>&lt; 5 minutos</td>
+          </tr>
+          <tr>
+            <td><strong>Recordatorio de pago</strong></td>
+            <td>✔</td>
+            <td>-</td>
+            <td>✔</td>
+            <td>Baja</td>
+            <td>&lt; 1 hora</td>
+          </tr>
+          <tr>
+            <td><strong>Promociones</strong></td>
+            <td>✔</td>
+            <td>-</td>
+            <td>✔</td>
+            <td>Baja</td>
+            <td>Best-effort</td>
+          </tr>
+          <tr>
+            <td><strong>Transferencia fallida</strong></td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>✔</td>
+            <td>Alta</td>
+            <td>&lt; 1 minuto</td>
+          </tr>
+          <tr>
+            <td><strong>Actualización de app disponible</strong></td>
+            <td>-</td>
+            <td>-</td>
+            <td>✔</td>
+            <td>Baja</td>
+            <td>Best-effort</td>
+          </tr>
         </tbody>
-    </table>
+      </table>
 
-    <div class="note">
-        <strong>Configuración de Usuario:</strong> El usuario puede configurar sus preferencias de notificaciones, pero <strong>no puede desactivar</strong> notificaciones de seguridad (login, cambio de contraseña, transferencias).
+      <div class="note">
+        <strong>Configuración de Usuario:</strong> El usuario puede configurar
+        sus preferencias de notificaciones, pero
+        <strong>no puede desactivar</strong> notificaciones de seguridad (login,
+        cambio de contraseña, transferencias).
+      </div>
     </div>
-</div>
 
-<h2>7.4 Colas de Prioridad</h2>
+    <h2>7.4 Colas de Prioridad</h2>
 
-<div class="section">
-    <h3>7.4.1 Implementación de Prioridades</h3>
+    <div class="section">
+      <h3>7.4.1 Implementación de Prioridades</h3>
 
-    <p>Bull Queue permite asignar prioridades numéricas a los jobs (menor número = mayor prioridad):</p>
+      <p>
+        Bull Queue permite asignar prioridades numéricas a los jobs (menor
+        número = mayor prioridad):
+      </p>
 
-    <div class="diagram">
+      <div class="diagram">
         <div class="diagram-title">Sistema de Prioridades</div>
-        <pre>
-┌─────────────────────────────────────────────────────┐
-│              REDIS QUEUE (Bull)                     │
-├─────────────────────────────────────────────────────┤
-│                                                     │
-│  Priority 1 (CRITICAL) - Security Events           │
-│  ┌──────────────────────────────────────────┐     │
-│  │ Login nuevo dispositivo                  │     │
-│  │ Cambio contraseña                        │     │
-│  │ Intento login fallido                    │     │
-│  └──────────────────────────────────────────┘     │
-│          ↓ Procesado primero                       │
-│                                                     │
-│  Priority 2 (HIGH) - Transactional Events          │
-│  ┌──────────────────────────────────────────┐     │
-│  │ Transferencia exitosa                    │     │
-│  │ Transferencia fallida                    │     │
-│  │ Recepción de dinero                      │     │
-│  └──────────────────────────────────────────┘     │
-│          ↓                                         │
-│                                                     │
-│  Priority 3 (NORMAL) - Informational               │
-│  ┌──────────────────────────────────────────┐     │
-│  │ Saldo bajo                               │     │
-│  │ Recordatorio pago                        │     │
-│  └──────────────────────────────────────────┘     │
-│          ↓                                         │
-│                                                     │
-│  Priority 4 (LOW) - Marketing                      │
-│  ┌──────────────────────────────────────────┐     │
-│  │ Promociones                              │     │
-│  │ Newsletter                               │     │
-│  └──────────────────────────────────────────┘     │
-│          ↓ Procesado último                        │
-│                                                     │
-└─────────────────────────────────────────────────────┘
+        <pre class="mermaid">
+graph TB
+    QUEUE[REDIS QUEUE - Bull]
+    
+    P1[Priority 1 - CRITICAL<br/>
+        Security Events<br/><br/>
+        • Login nuevo dispositivo<br/>
+        • Cambio contraseña<br/>
+        • Intento login fallido]
+    
+    P2[Priority 2 - HIGH<br/>
+        Transactional Events<br/>
+        • Transferencia exitosa<br/>
+        • Transferencia fallida<br/>
+        • Recepción de dinero]
+    
+    P3[Priority 3 - NORMAL<br/>
+        Informational<br/><br/>
+        • Saldo bajo<br/>
+        • Recordatorio pago]
+    
+    P4[Priority 4 - LOW<br/>
+        Marketing<br/>
+        • Promociones<br/>
+        • Newsletter]
+    
+    QUEUE --> P1
+    P1 -->|Procesado primero| P2
+    P2 --> P3
+    P3 -->|Procesado último| P4
+    
+    style QUEUE fill:#667eea,stroke:#333,color:#fff,stroke-width:3px
+    style P1 fill:#f44336,stroke:#333,color:#fff
+    style P2 fill:#ff9800,stroke:#333,color:#fff
+    style P3 fill:#2196F3,stroke:#333,color:#fff
+    style P4 fill:#9e9e9e,stroke:#333,color:#fff
         </pre>
+      </div>
+
+      <h3>7.4.2 Workers Dedicados por Prioridad</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Prioridad</th>
+            <th>Workers Asignados</th>
+            <th>SLA de Procesamiento</th>
+            <th>Reintentos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>CRITICAL (1)</strong></td>
+            <td>6 workers</td>
+            <td>&lt; 10 segundos</td>
+            <td>5 intentos, exponential backoff</td>
+          </tr>
+          <tr>
+            <td><strong>HIGH (2)</strong></td>
+            <td>4 workers</td>
+            <td>&lt; 30 segundos</td>
+            <td>3 intentos, exponential backoff</td>
+          </tr>
+          <tr>
+            <td><strong>NORMAL (3)</strong></td>
+            <td>2 workers</td>
+            <td>&lt; 5 minutos</td>
+            <td>2 intentos, exponential backoff</td>
+          </tr>
+          <tr>
+            <td><strong>LOW (4)</strong></td>
+            <td>1 worker</td>
+            <td>Best-effort</td>
+            <td>1 intento, sin retry</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <h3>7.4.2 Workers Dedicados por Prioridad</h3>
+    <h2>7.5 Flujo Completo de Notificación</h2>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Prioridad</th>
-                <th>Workers Asignados</th>
-                <th>SLA de Procesamiento</th>
-                <th>Reintentos</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>CRITICAL (1)</strong></td>
-                <td>6 workers</td>
-                <td>&lt; 10 segundos</td>
-                <td>5 intentos, exponential backoff</td>
-            </tr>
-            <tr>
-                <td><strong>HIGH (2)</strong></td>
-                <td>4 workers</td>
-                <td>&lt; 30 segundos</td>
-                <td>3 intentos, exponential backoff</td>
-            </tr>
-            <tr>
-                <td><strong>NORMAL (3)</strong></td>
-                <td>2 workers</td>
-                <td>&lt; 5 minutos</td>
-                <td>2 intentos, exponential backoff</td>
-            </tr>
-            <tr>
-                <td><strong>LOW (4)</strong></td>
-                <td>1 worker</td>
-                <td>Best-effort</td>
-                <td>1 intento, sin retry</td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-
-<h2>7.5 Flujo Completo de Notificación</h2>
-
-<div class="section">
-    <div class="diagram">
-        <div class="diagram-title">Flujo Detallado: Notificación de Transferencia</div>
-        <pre>
-1. Usuario completa transferencia
-   │
-   ▼
-2. MS-Pagos emite evento
-   POST → Kafka Topic: notifications
-   {
-     event: "TRANSFER_COMPLETED",
-     userId: "user-12345",
-     data: {
-       amount: 1500,
-       recipient: "Juan Pérez",
-       accountId: "acc-111"
-     },
-     priority: "HIGH",
-     channels: ["email", "sms", "push"]
-   }
-   │
-   ▼
-3. MS-Notificaciones consume evento
-   Consumer Group: notification-service
-   │
-   ├─► Valida estructura del evento
-   ├─► Consulta preferencias del usuario (DB/Cache)
-   └─► Respeta preferencias (excepto notif. seguridad)
-   │
-   ▼
-4. Enqueue jobs en Bull Queue
-   │
-   ├─► Queue: email-notifications
-   │   Job: {
-   │     template: "transfer-completed",
-   │     to: "user@example.com",
-   │     data: { amount, recipient },
-   │     priority: 2
-   │   }
-   │
-   ├─► Queue: sms-notifications
-   │   Job: {
-   │     to: "+593987654321",
-   │     message: "Transferencia $1,500 a Juan Pérez exitosa",
-   │     priority: 2
-   │   }
-   │
-   └─► Queue: push-notifications
-       Job: {
-         token: "fcm-device-token-xyz",
-         title: "Transferencia exitosa",
-         body: "$1,500 enviados a Juan Pérez",
-         priority: 2
-       }
-   │
-   ▼
-5. Workers procesan jobs en paralelo
-   │
-   ├─► Email Worker (Worker Thread)
-   │   ├─► Renderiza plantilla HTML (Handlebars)
-   │   ├─► Envía vía Nodemailer SMTP
-   │   └─► Registra resultado en DB
-   │
-   ├─► SMS Worker (Worker Thread)
-   │   ├─► Envía vía Firebase Cloud Messaging
-   │   └─► Registra resultado en DB
-   │
-   └─► Push Worker (Worker Thread)
-       ├─► Envía vía Firebase Cloud Messaging
-       └─► Registra resultado en DB
-   │
-   ▼
-6. Confirmación y Logs
-   │
-   ├─► Si exitoso: Marca job como completed
-   ├─► Si falla: Reintenta con exponential backoff
-   ├─► Registra en Elasticsearch para auditoría
-   └─► Actualiza métricas en Prometheus
-   │
-   ▼
-7. Usuario recibe notificación
-   Tiempo total: &lt; 30 segundos
+    <div class="section">
+      <div class="diagram">
+        <div class="diagram-title">
+          Flujo Detallado: Notificación de Transferencia
+        </div>
+        <pre class="mermaid">
+sequenceDiagram
+    participant U as Usuario
+    participant PAG as MS-Pagos
+    participant K as Kafka<br/>Topic: notifications
+    participant NOT as MS-Notificaciones
+    participant DB as Database/Cache
+    participant BULL as Bull Queue
+    participant W as Workers<br/>Email/SMS/Push
+    participant EXT as Servicios Externos<br/>Nodemailer/Firebase
+    participant ES as Elasticsearch<br/>Audit Logs
+    
+    U->>PAG: Completa transferencia
+    PAG->>K: POST Event TRANSFER_COMPLETED<br/>{userId, amount, recipient, priority: HIGH}
+    K->>NOT: Consumer Group notification-service
+    
+    NOT->>NOT: Valida estructura del evento
+    NOT->>DB: Consulta preferencias del usuario
+    DB-->>NOT: Preferencias (respeta excepto seguridad)
+    
+    NOT->>BULL: Enqueue job: email-notifications<br/>{template, to, data, priority: 2}
+    NOT->>BULL: Enqueue job: sms-notifications<br/>{to, message, priority: 2}
+    NOT->>BULL: Enqueue job: push-notifications<br/>{token, title, body, priority: 2}
+    
+    par Workers procesan en paralelo
+        BULL->>W: Email Worker (Worker Thread)
+        W->>W: Renderiza plantilla HTML (Handlebars)
+        W->>EXT: Envía vía Nodemailer SMTP
+        EXT-->>W: ✓ Enviado
+        W->>DB: Registra resultado en DB
+        W->>ES: Log para auditoría
+    and
+        BULL->>W: SMS Worker (Worker Thread)
+        W->>EXT: Envía vía Firebase Cloud Messaging
+        EXT-->>W: ✓ Enviado
+        W->>DB: Registra resultado en DB
+        W->>ES: Log para auditoría
+    and
+        BULL->>W: Push Worker (Worker Thread)
+        W->>EXT: Envía vía Firebase Cloud Messaging
+        EXT-->>W: ✓ Enviado
+        W->>DB: Registra resultado en DB
+        W->>ES: Log para auditoría
+    end
+    
+    W->>BULL: Marca jobs como completed
+    BULL->>NOT: Actualiza métricas en Prometheus
+    
+    Note over U,ES: Usuario recibe notificación<br/>Tiempo total: < 30 segundos
         </pre>
+      </div>
     </div>
-</div>
 
-<h2>7.6 Gestión de Fallos y Reintentos</h2>
+    <h2>7.6 Gestión de Fallos y Reintentos</h2>
 
-<div class="section">
-    <h3>7.6.1 Estrategia de Reintentos</h3>
+    <div class="section">
+      <h3>7.6.1 Estrategia de Reintentos</h3>
 
-    <table>
+      <table>
         <thead>
-            <tr>
-                <th>Intento</th>
-                <th>Espera</th>
-                <th>Acción</th>
-            </tr>
+          <tr>
+            <th>Intento</th>
+            <th>Espera</th>
+            <th>Acción</th>
+          </tr>
         </thead>
         <tbody>
-            <tr>
-                <td><strong>1</strong></td>
-                <td>Inmediato</td>
-                <td>Primer intento de envío</td>
-            </tr>
-            <tr>
-                <td><strong>2</strong></td>
-                <td>30 segundos</td>
-                <td>Retry con backoff</td>
-            </tr>
-            <tr>
-                <td><strong>3</strong></td>
-                <td>2 minutos</td>
-                <td>Retry con backoff</td>
-            </tr>
-            <tr>
-                <td><strong>4</strong></td>
-                <td>5 minutos</td>
-                <td>Retry con backoff</td>
-            </tr>
-            <tr>
-                <td><strong>5</strong></td>
-                <td>15 minutos</td>
-                <td>Último intento</td>
-            </tr>
-            <tr>
-                <td><strong>Failed</strong></td>
-                <td>-</td>
-                <td>Job marcado como fallido, alerta a operaciones</td>
-            </tr>
+          <tr>
+            <td><strong>1</strong></td>
+            <td>Inmediato</td>
+            <td>Primer intento de envío</td>
+          </tr>
+          <tr>
+            <td><strong>2</strong></td>
+            <td>30 segundos</td>
+            <td>Retry con backoff</td>
+          </tr>
+          <tr>
+            <td><strong>3</strong></td>
+            <td>2 minutos</td>
+            <td>Retry con backoff</td>
+          </tr>
+          <tr>
+            <td><strong>4</strong></td>
+            <td>5 minutos</td>
+            <td>Retry con backoff</td>
+          </tr>
+          <tr>
+            <td><strong>5</strong></td>
+            <td>15 minutos</td>
+            <td>Último intento</td>
+          </tr>
+          <tr>
+            <td><strong>Failed</strong></td>
+            <td>-</td>
+            <td>Job marcado como fallido, alerta a operaciones</td>
+          </tr>
         </tbody>
-    </table>
+      </table>
 
-    <h3>7.6.2 Manejo de Errores por Canal</h3>
+      <h3>7.6.2 Manejo de Errores por Canal</h3>
 
-    <table>
+      <table>
         <thead>
-            <tr>
-                <th>Canal</th>
-                <th>Error Común</th>
-                <th>Acción de Recuperación</th>
-            </tr>
+          <tr>
+            <th>Canal</th>
+            <th>Error Común</th>
+            <th>Acción de Recuperación</th>
+          </tr>
         </thead>
         <tbody>
-            <tr>
-                <td><strong>Email</strong></td>
-                <td>SMTP timeout</td>
-                <td>Retry con otro servidor SMTP de backup</td>
-            </tr>
-            <tr>
-                <td><strong>Email</strong></td>
-                <td>Email inválido</td>
-                <td>No retry, marcar email para validación</td>
-            </tr>
-            <tr>
-                <td><strong>SMS</strong></td>
-                <td>Firebase rate limit</td>
-                <td>Delay + retry, activar rate limiting local</td>
-            </tr>
-            <tr>
-                <td><strong>SMS</strong></td>
-                <td>Número inválido</td>
-                <td>No retry, marcar teléfono para validación</td>
-            </tr>
-            <tr>
-                <td><strong>Push</strong></td>
-                <td>Token expirado</td>
-                <td>Solicitar nuevo token al dispositivo</td>
-            </tr>
-            <tr>
-                <td><strong>Push</strong></td>
-                <td>Dispositivo offline</td>
-                <td>Queue notification, entregar cuando vuelva online</td>
-            </tr>
+          <tr>
+            <td><strong>Email</strong></td>
+            <td>SMTP timeout</td>
+            <td>Retry con otro servidor SMTP de backup</td>
+          </tr>
+          <tr>
+            <td><strong>Email</strong></td>
+            <td>Email inválido</td>
+            <td>No retry, marcar email para validación</td>
+          </tr>
+          <tr>
+            <td><strong>SMS</strong></td>
+            <td>Firebase rate limit</td>
+            <td>Delay + retry, activar rate limiting local</td>
+          </tr>
+          <tr>
+            <td><strong>SMS</strong></td>
+            <td>Número inválido</td>
+            <td>No retry, marcar teléfono para validación</td>
+          </tr>
+          <tr>
+            <td><strong>Push</strong></td>
+            <td>Token expirado</td>
+            <td>Solicitar nuevo token al dispositivo</td>
+          </tr>
+          <tr>
+            <td><strong>Push</strong></td>
+            <td>Dispositivo offline</td>
+            <td>Queue notification, entregar cuando vuelva online</td>
+          </tr>
         </tbody>
-    </table>
+      </table>
 
-    <h3>7.6.3 Dead Letter Queue (DLQ)</h3>
+      <h3>7.6.3 Dead Letter Queue (DLQ)</h3>
 
-    <p>Jobs que fallan después de todos los reintentos se mueven a una Dead Letter Queue para revisión manual:</p>
+      <p>
+        Jobs que fallan después de todos los reintentos se mueven a una Dead
+        Letter Queue para revisión manual:
+      </p>
 
-    <div class="warning">
+      <div class="warning">
         <strong>Alertas de DLQ:</strong>
         <ul>
-            <li>Si DLQ &gt; 10 jobs: Alerta a Slack</li>
-            <li>Si DLQ &gt; 50 jobs: Alerta crítica a PagerDuty</li>
-            <li>Dashboard en Bull Board para revisar jobs fallidos</li>
-            <li>Posibilidad de re-procesar manualmente desde UI</li>
+          <li>Si DLQ &gt; 10 jobs: Alerta a Slack</li>
+          <li>Si DLQ &gt; 50 jobs: Alerta crítica a PagerDuty</li>
+          <li>Dashboard en Bull Board para revisar jobs fallidos</li>
+          <li>Posibilidad de re-procesar manualmente desde UI</li>
         </ul>
+      </div>
     </div>
-</div>
 
-<h2>7.7 Plantillas de Notificaciones</h2>
+    <h2>7.7 Plantillas de Notificaciones</h2>
 
-<div class="section">
-    <h3>7.7.1 Sistema de Plantillas con Handlebars</h3>
+    <div class="section">
+      <h3>7.7.1 Sistema de Plantillas con Handlebars</h3>
 
-    <p>Las plantillas de email se gestionan con Handlebars para facilitar la personalización:</p>
+      <p>
+        Las plantillas de email se gestionan con Handlebars para facilitar la
+        personalización:
+      </p>
 
-    <div class="diagram">
+      <div class="diagram">
         <div class="diagram-title">Estructura de Plantillas</div>
         <pre>
 templates/
@@ -659,481 +710,596 @@ templates/
   &lt;li&gt;Fecha: {{date}}&lt;/li&gt;
 &lt;/ul&gt;
         </pre>
+      </div>
+
+      <h3>7.7.2 Localización (i18n)</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Idioma</th>
+            <th>Plantillas</th>
+            <th>Prioridad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Español (es)</strong></td>
+            <td>templates/es/</td>
+            <td>Principal</td>
+          </tr>
+          <tr>
+            <td><strong>Inglés (en)</strong></td>
+            <td>templates/en/</td>
+            <td>Secundario</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <p>
+        El idioma se determina según las preferencias del usuario almacenadas en
+        su perfil.
+      </p>
     </div>
 
-    <h3>7.7.2 Localización (i18n)</h3>
+    <h2>7.8 Monitoreo y Métricas</h2>
 
-    <table>
+    <div class="section">
+      <h3>7.8.1 Métricas Clave</h3>
+
+      <table>
         <thead>
-            <tr>
-                <th>Idioma</th>
-                <th>Plantillas</th>
-                <th>Prioridad</th>
-            </tr>
+          <tr>
+            <th>Métrica</th>
+            <th>Descripción</th>
+            <th>Umbral de Alerta</th>
+          </tr>
         </thead>
         <tbody>
-            <tr>
-                <td><strong>Español (es)</strong></td>
-                <td>templates/es/</td>
-                <td>Principal</td>
-            </tr>
-            <tr>
-                <td><strong>Inglés (en)</strong></td>
-                <td>templates/en/</td>
-                <td>Secundario</td>
-            </tr>
+          <tr>
+            <td><strong>Notification Rate</strong></td>
+            <td>Notificaciones procesadas por segundo</td>
+            <td>&lt; 100/segundo (capacidad baja)</td>
+          </tr>
+          <tr>
+            <td><strong>Success Rate Email</strong></td>
+            <td>% de emails enviados exitosamente</td>
+            <td>&lt; 95%</td>
+          </tr>
+          <tr>
+            <td><strong>Success Rate SMS</strong></td>
+            <td>% de SMS enviados exitosamente</td>
+            <td>&lt; 90%</td>
+          </tr>
+          <tr>
+            <td><strong>Success Rate Push</strong></td>
+            <td>% de push enviados exitosamente</td>
+            <td>&lt; 85% (normal por tokens expirados)</td>
+          </tr>
+          <tr>
+            <td><strong>Queue Latency</strong></td>
+            <td>Tiempo desde enqueue hasta procesamiento</td>
+            <td>&gt; 60 segundos</td>
+          </tr>
+          <tr>
+            <td><strong>DLQ Size</strong></td>
+            <td>Jobs en Dead Letter Queue</td>
+            <td>&gt; 50 jobs</td>
+          </tr>
+          <tr>
+            <td><strong>Worker Health</strong></td>
+            <td>Workers activos vs total esperado</td>
+            <td>&lt; 80% de workers activos</td>
+          </tr>
         </tbody>
-    </table>
+      </table>
 
-    <p>El idioma se determina según las preferencias del usuario almacenadas en su perfil.</p>
-</div>
+      <h3>7.8.2 Dashboard de Monitoreo</h3>
 
-<h2>7.8 Monitoreo y Métricas</h2>
-
-<div class="section">
-    <h3>7.8.1 Métricas Clave</h3>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Métrica</th>
-                <th>Descripción</th>
-                <th>Umbral de Alerta</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>Notification Rate</strong></td>
-                <td>Notificaciones procesadas por segundo</td>
-                <td>&lt; 100/segundo (capacidad baja)</td>
-            </tr>
-            <tr>
-                <td><strong>Success Rate Email</strong></td>
-                <td>% de emails enviados exitosamente</td>
-                <td>&lt; 95%</td>
-            </tr>
-            <tr>
-                <td><strong>Success Rate SMS</strong></td>
-                <td>% de SMS enviados exitosamente</td>
-                <td>&lt; 90%</td>
-            </tr>
-            <tr>
-                <td><strong>Success Rate Push</strong></td>
-                <td>% de push enviados exitosamente</td>
-                <td>&lt; 85% (normal por tokens expirados)</td>
-            </tr>
-            <tr>
-                <td><strong>Queue Latency</strong></td>
-                <td>Tiempo desde enqueue hasta procesamiento</td>
-                <td>&gt; 60 segundos</td>
-            </tr>
-            <tr>
-                <td><strong>DLQ Size</strong></td>
-                <td>Jobs en Dead Letter Queue</td>
-                <td>&gt; 50 jobs</td>
-            </tr>
-            <tr>
-                <td><strong>Worker Health</strong></td>
-                <td>Workers activos vs total esperado</td>
-                <td>&lt; 80% de workers activos</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>7.8.2 Dashboard de Monitoreo</h3>
-
-    <div class="note">
-        <strong>Bull Board Dashboard:</strong> Interfaz web para monitoreo en tiempo real
+      <div class="note">
+        <strong>Bull Board Dashboard:</strong> Interfaz web para monitoreo en
+        tiempo real
         <ul>
-            <li><strong>Jobs activos:</strong> Visualización de jobs en procesamiento</li>
-            <li><strong>Jobs completados:</strong> Historial reciente con métricas de éxito</li>
-            <li><strong>Jobs fallidos:</strong> Revisar errores y reintentar manualmente</li>
-            <li><strong>Métricas por cola:</strong> Throughput, latencia, tasa de éxito</li>
-            <li><strong>Workers status:</strong> Estado de cada worker thread</li>
+          <li>
+            <strong>Jobs activos:</strong> Visualización de jobs en
+            procesamiento
+          </li>
+          <li>
+            <strong>Jobs completados:</strong> Historial reciente con métricas
+            de éxito
+          </li>
+          <li>
+            <strong>Jobs fallidos:</strong> Revisar errores y reintentar
+            manualmente
+          </li>
+          <li>
+            <strong>Métricas por cola:</strong> Throughput, latencia, tasa de
+            éxito
+          </li>
+          <li><strong>Workers status:</strong> Estado de cada worker thread</li>
         </ul>
+      </div>
     </div>
-</div>
 
-<h2>7.9 Cumplimiento Normativo</h2>
+    <h2>7.9 Cumplimiento Normativo</h2>
 
-<div class="section">
-    <h3>7.9.1 Requisitos Normativos</h3>
+    <div class="section">
+      <h3>7.9.1 Requisitos Normativos</h3>
 
-    <table>
+      <table>
         <thead>
-            <tr>
-                <th>Normativa</th>
-                <th>Requisito</th>
-                <th>Implementación</th>
-            </tr>
+          <tr>
+            <th>Normativa</th>
+            <th>Requisito</th>
+            <th>Implementación</th>
+          </tr>
         </thead>
         <tbody>
-            <tr>
-                <td><strong>Normativas Bancarias</strong></td>
-                <td>Mínimo 2 canales de notificación para movimientos</td>
-                <td>Email + SMS o Email + Push para todas las transacciones</td>
-            </tr>
-            <tr>
-                <td><strong>GDPR</strong></td>
-                <td>Consentimiento para comunicaciones de marketing</td>
-                <td>Opt-in explícito, fácil opt-out en cada email</td>
-            </tr>
-            <tr>
-                <td><strong>GDPR</strong></td>
-                <td>Derecho al olvido</td>
-                <td>Eliminar datos de contacto al cerrar cuenta</td>
-            </tr>
-            <tr>
-                <td><strong>ISO 27001</strong></td>
-                <td>Logs de todas las notificaciones</td>
-                <td>Registro en Elasticsearch con retención de 2 años</td>
-            </tr>
-            <tr>
-                <td><strong>PCI DSS</strong></td>
-                <td>No enviar datos sensibles por email/SMS</td>
-                <td>Solo enviar últimos 4 dígitos de cuentas, nunca CVV</td>
-            </tr>
+          <tr>
+            <td><strong>Normativas Bancarias</strong></td>
+            <td>Mínimo 2 canales de notificación para movimientos</td>
+            <td>Email + SMS o Email + Push para todas las transacciones</td>
+          </tr>
+          <tr>
+            <td><strong>GDPR</strong></td>
+            <td>Consentimiento para comunicaciones de marketing</td>
+            <td>Opt-in explícito, fácil opt-out en cada email</td>
+          </tr>
+          <tr>
+            <td><strong>GDPR</strong></td>
+            <td>Derecho al olvido</td>
+            <td>Eliminar datos de contacto al cerrar cuenta</td>
+          </tr>
+          <tr>
+            <td><strong>ISO 27001</strong></td>
+            <td>Logs de todas las notificaciones</td>
+            <td>Registro en Elasticsearch con retención de 2 años</td>
+          </tr>
+          <tr>
+            <td><strong>PCI DSS</strong></td>
+            <td>No enviar datos sensibles por email/SMS</td>
+            <td>Solo enviar últimos 4 dígitos de cuentas, nunca CVV</td>
+          </tr>
         </tbody>
-    </table>
+      </table>
 
-    <h3>7.9.2 Auditoría de Notificaciones</h3>
+      <h3>7.9.2 Auditoría de Notificaciones</h3>
 
-    <p>Cada notificación enviada se registra con:</p>
+      <p>Cada notificación enviada se registra con:</p>
 
-    <ul>
+      <ul>
         <li><strong>Timestamp:</strong> Fecha y hora exacta de envío</li>
         <li><strong>Usuario:</strong> ID del destinatario</li>
         <li><strong>Canal:</strong> Email, SMS o Push</li>
         <li><strong>Tipo:</strong> Categoría del evento</li>
         <li><strong>Estado:</strong> Enviado, fallido, pendiente</li>
         <li><strong>Intentos:</strong> Número de reintentos realizados</li>
-        <li><strong>Contenido:</strong> Hash del contenido (no el contenido completo por privacidad)</li>
-    </ul>
-</div>
-
-<h2>7.10 Escalabilidad y Performance</h2>
-
-<div class="section">
-    <h3>7.10.1 Capacidad del Sistema</h3>
-
-    <table>
-        <thead>
-            <tr>
-                <th>Componente</th>
-                <th>Capacidad</th>
-                <th>Configuración</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>Kafka Topic</strong></td>
-                <td>10,000+ mensajes/segundo</td>
-                <td>5 particiones, replication factor 3</td>
-            </tr>
-            <tr>
-                <td><strong>Redis Queue</strong></td>
-                <td>15,000+ jobs/segundo</td>
-                <td>Cluster de 3 nodos, AOF enabled</td>
-            </tr>
-            <tr>
-                <td><strong>Worker Pool</strong></td>
-                <td>1,000+ notificaciones/segundo</td>
-                <td>12 workers por pod (4 email, 4 sms, 4 push)</td>
-            </tr>
-            <tr>
-                <td><strong>Email SMTP</strong></td>
-                <td>300+ emails/minuto</td>
-                <td>Rate limit del proveedor SMTP</td>
-            </tr>
-            <tr>
-                <td><strong>Firebase SMS</strong></td>
-                <td>500+ SMS/minuto</td>
-                <td>Firebase free tier + paid</td>
-            </tr>
-            <tr>
-                <td><strong>Firebase Push</strong></td>
-                <td>Ilimitado</td>
-                <td>Sin rate limit en Firebase FCM</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <h3>7.10.2 Escalabilidad Horizontal</h3>
-
-    <div class="diagram">
-        <div class="diagram-title">Escalado de MS-Notificaciones en Kubernetes</div>
-        <pre>
-Carga Baja (< 100 notif/s)
-┌─────────────────┐
-│   Pod 1         │
-│   12 workers    │
-└─────────────────┘
-
-Carga Media (100-500 notif/s)
-┌─────────────────┐  ┌─────────────────┐
-│   Pod 1         │  │   Pod 2         │
-│   12 workers    │  │   12 workers    │
-└─────────────────┘  └─────────────────┘
-
-Carga Alta (500-1500 notif/s)
-┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
-│   Pod 1         │  │   Pod 2         │  │   Pod 3         │
-│   12 workers    │  │   12 workers    │  │   12 workers    │
-└─────────────────┘  └─────────────────┘  └─────────────────┘
-
-<strong>HPA (Horizontal Pod Autoscaler):</strong>
-- Métrica: Queue length en Redis
-- Umbral scale-up: &gt; 1000 jobs pendientes
-- Umbral scale-down: &lt; 100 jobs pendientes
-- Min replicas: 2
-- Max replicas: 5
-        </pre>
+        <li>
+          <strong>Contenido:</strong> Hash del contenido (no el contenido
+          completo por privacidad)
+        </li>
+      </ul>
     </div>
 
-    <h3>7.10.3 Optimizaciones de Performance</h3>
+    <h2>7.10 Escalabilidad y Performance</h2>
 
-    <ul>
-        <li><strong>Batch processing:</strong> Agrupar notificaciones del mismo tipo para envío masivo</li>
+    <div class="section">
+      <h3>7.10.1 Capacidad del Sistema</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Componente</th>
+            <th>Capacidad</th>
+            <th>Configuración</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Kafka Topic</strong></td>
+            <td>10,000+ mensajes/segundo</td>
+            <td>5 particiones, replication factor 3</td>
+          </tr>
+          <tr>
+            <td><strong>Redis Queue</strong></td>
+            <td>15,000+ jobs/segundo</td>
+            <td>Cluster de 3 nodos, AOF enabled</td>
+          </tr>
+          <tr>
+            <td><strong>Worker Pool</strong></td>
+            <td>1,000+ notificaciones/segundo</td>
+            <td>12 workers por pod (4 email, 4 sms, 4 push)</td>
+          </tr>
+          <tr>
+            <td><strong>Email SMTP</strong></td>
+            <td>300+ emails/minuto</td>
+            <td>Rate limit del proveedor SMTP</td>
+          </tr>
+          <tr>
+            <td><strong>Firebase SMS</strong></td>
+            <td>500+ SMS/minuto</td>
+            <td>Firebase free tier + paid</td>
+          </tr>
+          <tr>
+            <td><strong>Firebase Push</strong></td>
+            <td>Ilimitado</td>
+            <td>Sin rate limit en Firebase FCM</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>7.10.2 Escalabilidad Horizontal</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">
+          Escalado de MS-Notificaciones en Kubernetes
+        </div>
+        <pre class="mermaid">
+graph TB
+    subgraph "Carga Baja < 100 notif/s"
+        P1[Pod 1<br/>
+            12 workers]
+    end
+    
+    subgraph "Carga Media 100-500 notif/s"
+        P2A[Pod 1<br/>
+            12 workers]
+        P2B[Pod 2<br/>
+            12 workers]
+    end
+    
+    subgraph "Carga Alta 500-1500 notif/s"
+        P3A[Pod 1<br/>
+            12 workers]
+        P3B[Pod 2<br/>
+            12 workers]
+        P3C[Pod 3<br/>
+            12 workers]
+    end
+    
+    HPA["HPA&nbsp;(Horizontal&nbsp;Pod&nbsp;Autoscaler)"<br/>
+            • Métrica: Queue length en Redis<br/>
+            • Scale-up: > 1000 jobs pendientes<br/>
+            • Scale-down: < 100 jobs pendientes<br/>
+            • Min replicas: 2<br/>
+            • Max replicas: 5]
+    
+    style P1 fill:#4caf50,stroke:#333,color:#fff
+    style P2A fill:#ff9800,stroke:#333,color:#fff
+    style P2B fill:#ff9800,stroke:#333,color:#fff
+    style P3A fill:#f44336,stroke:#333,color:#fff
+    style P3B fill:#f44336,stroke:#333,color:#fff
+    style P3C fill:#f44336,stroke:#333,color:#fff
+    style HPA fill:#667eea,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <h3>7.10.3 Optimizaciones de Performance</h3>
+
+      <ul>
+        <li>
+          <strong>Batch processing:</strong> Agrupar notificaciones del mismo
+          tipo para envío masivo
+        </li>
         <li><strong>Connection pooling:</strong> Reutilizar conexiones SMTP</li>
-        <li><strong>Template caching:</strong> Cachear plantillas compiladas en memoria</li>
-        <li><strong>Lazy loading:</strong> Cargar datos de usuario solo cuando se necesitan</li>
-        <li><strong>Async all the way:</strong> Todo el pipeline es no-bloqueante</li>
-    </ul>
-</div>
+        <li>
+          <strong>Template caching:</strong> Cachear plantillas compiladas en
+          memoria
+        </li>
+        <li>
+          <strong>Lazy loading:</strong> Cargar datos de usuario solo cuando se
+          necesitan
+        </li>
+        <li>
+          <strong>Async all the way:</strong> Todo el pipeline es no-bloqueante
+        </li>
+      </ul>
+    </div>
 
-<h2>7.11 Seguridad</h2>
+    <h2>7.11 Seguridad</h2>
 
-<div class="section">
-    <h3>7.11.1 Protección de Datos Sensibles</h3>
+    <div class="section">
+      <h3>7.11.1 Protección de Datos Sensibles</h3>
 
-    <div class="warning">
+      <div class="warning">
         <strong>Reglas de Seguridad:</strong>
         <ul>
-            <li><strong>NO enviar por email/SMS:</strong> Contraseñas, CVV, tokens de autenticación completos</li>
-            <li><strong>Enmascarar datos:</strong> Cuentas bancarias (mostrar solo últimos 4 dígitos)</li>
-            <li><strong>Links con tokens:</strong> Usar tokens de un solo uso con TTL corto (15 minutos)</li>
-            <li><strong>HTTPS obligatorio:</strong> Todos los links en emails deben usar HTTPS</li>
-            <li><strong>No tracking:</strong> No incluir píxeles de tracking de terceros</li>
+          <li>
+            <strong>NO enviar por email/SMS:</strong> Contraseñas, CVV, tokens
+            de autenticación completos
+          </li>
+          <li>
+            <strong>Enmascarar datos:</strong> Cuentas bancarias (mostrar solo
+            últimos 4 dígitos)
+          </li>
+          <li>
+            <strong>Links con tokens:</strong> Usar tokens de un solo uso con
+            TTL corto (15 minutos)
+          </li>
+          <li>
+            <strong>HTTPS obligatorio:</strong> Todos los links en emails deben
+            usar HTTPS
+          </li>
+          <li>
+            <strong>No tracking:</strong> No incluir píxeles de tracking de
+            terceros
+          </li>
         </ul>
+      </div>
+
+      <h3>7.11.2 Prevención de Spam y Abuso</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Protección</th>
+            <th>Implementación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Rate Limiting por Usuario</strong></td>
+            <td>
+              Máximo 10 notificaciones del mismo tipo por hora por usuario
+            </td>
+          </tr>
+          <tr>
+            <td><strong>Deduplicación</strong></td>
+            <td>No enviar notificación duplicada en ventana de 5 minutos</td>
+          </tr>
+          <tr>
+            <td><strong>Email Authentication</strong></td>
+            <td>SPF, DKIM y DMARC configurados en dominio</td>
+          </tr>
+          <tr>
+            <td><strong>Unsubscribe Link</strong></td>
+            <td>Link para darse de baja en cada email de marketing (GDPR)</td>
+          </tr>
+          <tr>
+            <td><strong>Validación de Destinatarios</strong></td>
+            <td>Verificar formato de email/teléfono antes de enviar</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
-    <h3>7.11.2 Prevención de Spam y Abuso</h3>
+    <h2>7.12 Testing de Notificaciones</h2>
 
-    <table>
+    <div class="section">
+      <h3>7.12.1 Estrategia de Testing</h3>
+
+      <table>
         <thead>
-            <tr>
-                <th>Protección</th>
-                <th>Implementación</th>
-            </tr>
+          <tr>
+            <th>Tipo de Test</th>
+            <th>Objetivo</th>
+            <th>Herramienta</th>
+          </tr>
         </thead>
         <tbody>
-            <tr>
-                <td><strong>Rate Limiting por Usuario</strong></td>
-                <td>Máximo 10 notificaciones del mismo tipo por hora por usuario</td>
-            </tr>
-            <tr>
-                <td><strong>Deduplicación</strong></td>
-                <td>No enviar notificación duplicada en ventana de 5 minutos</td>
-            </tr>
-            <tr>
-                <td><strong>Email Authentication</strong></td>
-                <td>SPF, DKIM y DMARC configurados en dominio</td>
-            </tr>
-            <tr>
-                <td><strong>Unsubscribe Link</strong></td>
-                <td>Link para darse de baja en cada email de marketing (GDPR)</td>
-            </tr>
-            <tr>
-                <td><strong>Validación de Destinatarios</strong></td>
-                <td>Verificar formato de email/teléfono antes de enviar</td>
-            </tr>
+          <tr>
+            <td><strong>Unit Tests</strong></td>
+            <td>Lógica de enqueue, prioridades, formateo de plantillas</td>
+            <td>Jest</td>
+          </tr>
+          <tr>
+            <td><strong>Integration Tests</strong></td>
+            <td>Flujo completo Kafka → Queue → Worker → SMTP</td>
+            <td>Jest + Testcontainers</td>
+          </tr>
+          <tr>
+            <td><strong>Template Tests</strong></td>
+            <td>Renderizado correcto de plantillas con datos de prueba</td>
+            <td>Jest + Handlebars</td>
+          </tr>
+          <tr>
+            <td><strong>Load Tests</strong></td>
+            <td>Procesar 5,000 notificaciones/segundo sin degradación</td>
+            <td>k6</td>
+          </tr>
+          <tr>
+            <td><strong>Email Rendering</strong></td>
+            <td>Visualización correcta en Gmail, Outlook, Apple Mail</td>
+            <td>Litmus o Email on Acid</td>
+          </tr>
         </tbody>
-    </table>
-</div>
+      </table>
 
-<h2>7.12 Testing de Notificaciones</h2>
+      <h3>7.12.2 Ambiente de Testing</h3>
 
-<div class="section">
-    <h3>7.12.1 Estrategia de Testing</h3>
+      <ul>
+        <li>
+          <strong>Mailpit:</strong> Servidor SMTP de desarrollo que captura
+          emails sin enviarlos
+        </li>
+        <li>
+          <strong>Firebase Test Mode:</strong> Tokens de prueba que no envían
+          SMS/Push reales
+        </li>
+        <li>
+          <strong>Mock Workers:</strong> Workers simulados para testing de colas
+          sin servicios externos
+        </li>
+        <li>
+          <strong>Seed Data:</strong> Dataset de usuarios de prueba con
+          diferentes preferencias
+        </li>
+      </ul>
+    </div>
 
-    <table>
+    <h2>7.13 Costos Estimados</h2>
+
+    <div class="section">
+      <table>
         <thead>
-            <tr>
-                <th>Tipo de Test</th>
-                <th>Objetivo</th>
-                <th>Herramienta</th>
-            </tr>
+          <tr>
+            <th>Servicio</th>
+            <th>Volumen Mensual</th>
+            <th>Costo Mensual (USD)</th>
+          </tr>
         </thead>
         <tbody>
-            <tr>
-                <td><strong>Unit Tests</strong></td>
-                <td>Lógica de enqueue, prioridades, formateo de plantillas</td>
-                <td>Jest</td>
-            </tr>
-            <tr>
-                <td><strong>Integration Tests</strong></td>
-                <td>Flujo completo Kafka → Queue → Worker → SMTP</td>
-                <td>Jest + Testcontainers</td>
-            </tr>
-            <tr>
-                <td><strong>Template Tests</strong></td>
-                <td>Renderizado correcto de plantillas con datos de prueba</td>
-                <td>Jest + Handlebars</td>
-            </tr>
-            <tr>
-                <td><strong>Load Tests</strong></td>
-                <td>Procesar 5,000 notificaciones/segundo sin degradación</td>
-                <td>k6</td>
-            </tr>
-            <tr>
-                <td><strong>Email Rendering</strong></td>
-                <td>Visualización correcta en Gmail, Outlook, Apple Mail</td>
-                <td>Litmus o Email on Acid</td>
-            </tr>
+          <tr>
+            <td><strong>Firebase SMS</strong></td>
+            <td>50,000 SMS</td>
+            <td>$0 (10K gratis) + $40 (40K × $0.001)</td>
+          </tr>
+          <tr>
+            <td><strong>Firebase Push</strong></td>
+            <td>Ilimitado</td>
+            <td>$0 (gratis)</td>
+          </tr>
+          <tr>
+            <td><strong>SMTP Propio (Nodemailer)</strong></td>
+            <td>100,000 emails</td>
+            <td>$0 (infraestructura propia)</td>
+          </tr>
+          <tr>
+            <td><strong>Redis (ElastiCache)</strong></td>
+            <td>cache.t3.medium</td>
+            <td>$50</td>
+          </tr>
+          <tr>
+            <td><strong>Mailpit (Dev)</strong></td>
+            <td>Desarrollo</td>
+            <td>$0 (self-hosted)</td>
+          </tr>
         </tbody>
-    </table>
+      </table>
 
-    <h3>7.12.2 Ambiente de Testing</h3>
+      <div class="success">
+        <strong>Total Estimado: ~$90/mes</strong>
+        <p>
+          Ahorro versus alternativas como SendGrid ($300+/mes) o Twilio SMS
+          ($500+/mes para 50K SMS)
+        </p>
+      </div>
+    </div>
 
-    <ul>
-        <li><strong>Mailpit:</strong> Servidor SMTP de desarrollo que captura emails sin enviarlos</li>
-        <li><strong>Firebase Test Mode:</strong> Tokens de prueba que no envían SMS/Push reales</li>
-        <li><strong>Mock Workers:</strong> Workers simulados para testing de colas sin servicios externos</li>
-        <li><strong>Seed Data:</strong> Dataset de usuarios de prueba con diferentes preferencias</li>
-    </ul>
-</div>
+    <h2>7.14 Diagrama de Arquitectura Consolidado</h2>
 
-<h2>7.13 Costos Estimados</h2>
-
-<div class="section">
-    <table>
-        <thead>
-            <tr>
-                <th>Servicio</th>
-                <th>Volumen Mensual</th>
-                <th>Costo Mensual (USD)</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td><strong>Firebase SMS</strong></td>
-                <td>50,000 SMS</td>
-                <td>$0 (10K gratis) + $40 (40K × $0.001)</td>
-            </tr>
-            <tr>
-                <td><strong>Firebase Push</strong></td>
-                <td>Ilimitado</td>
-                <td>$0 (gratis)</td>
-            </tr>
-            <tr>
-                <td><strong>SMTP Propio (Nodemailer)</strong></td>
-                <td>100,000 emails</td>
-                <td>$0 (infraestructura propia)</td>
-            </tr>
-            <tr>
-                <td><strong>Redis (ElastiCache)</strong></td>
-                <td>cache.t3.medium</td>
-                <td>$50</td>
-            </tr>
-            <tr>
-                <td><strong>Mailpit (Dev)</strong></td>
-                <td>Desarrollo</td>
-                <td>$0 (self-hosted)</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="section">
+      <div class="diagram">
+        <div class="diagram-title">
+          Vista Completa del Sistema de Notificaciones
+        </div>
+        <pre class="mermaid">
+graph TB
+    MICRO[MICROSERVICIOS<br/>
+    MS-Pagos, 
+    MS-Auth,
+    MS-Datos-Cliente, 
+    MS-Auditoría]
+    
+    KAFKA[KAFKA CLUSTER<br/>
+        Topic: notifications<br/>
+               5 partitions
+               RF: 3]
+    
+    MS_NOT[MS-NOTIFICACIONES<br/>
+    Node.js + Worker Threads]
+    
+    MAIN[Main Thread<br/>
+    • Kafka Consumer<br/>
+    • Job Enqueue<br/>
+    • Worker Coordination]
+    
+    WORKERS[Worker Thread Pool<br/>
+    12 Workers Total<br/>
+    • 4 Email Workers<br/>
+    • 4 SMS Workers<br/>
+    • 4 Push Workers]
+    
+    subgraph "REDIS QUEUES - Bull"
+        Q1[Redis Queue<br/>Email<br/>Bull Queue]
+        Q2[Redis Queue<br/>SMS<br/>Bull Queue]
+        Q3[Redis Queue<br/>Push<br/>Bull Queue]
+    end
+    
+    subgraph "SERVICIOS EXTERNOS"
+        EMAIL[Mailpit Dev /<br/>Nodemailer Prod]
+        SMS[Firebase Cloud<br/>Messaging SMS]
+        PUSH[Firebase Cloud<br/>Messaging Push]
+    end
+    
+    ES[ELASTICSEARCH<br/>Audit Logs<br/>Retention: 2 años]
+    
+    MICRO -->|Publish Events| KAFKA
+    KAFKA -->|Consumer Group| MS_NOT
+    MS_NOT --> MAIN
+    MAIN --> WORKERS
+    
+    WORKERS --> Q1
+    WORKERS --> Q2
+    WORKERS --> Q3
+    
+    Q1 --> EMAIL
+    Q2 --> SMS
+    Q3 --> PUSH
+    
+    EMAIL --> ES
+    SMS --> ES
+    PUSH --> ES
+    
+    style MICRO fill:#667eea,stroke:#333,color:#fff
+    style KAFKA fill:#764ba2,stroke:#333,color:#fff
+    style MS_NOT fill:#4caf50,stroke:#333,color:#fff
+    style MAIN fill:#2196F3,stroke:#333,color:#fff
+    style WORKERS fill:#ff9800,stroke:#333,color:#fff
+    style ES fill:#9c27b0,stroke:#333,color:#fff
+        </pre>
+      </div>
+    </div>
 
     <div class="success">
-        <strong>Total Estimado: ~$90/mes</strong>
-        <p>Ahorro versus alternativas como SendGrid ($300+/mes) o Twilio SMS ($500+/mes para 50K SMS)</p>
+      <h3>✅ Resumen del Capítulo</h3>
+      <p>El sistema de notificaciones propuesto ofrece:</p>
+      <ul>
+        <li>
+          <strong>Alta disponibilidad:</strong> Arquitectura basada en colas
+          resiliente a fallos
+        </li>
+        <li>
+          <strong>Escalabilidad:</strong> Worker Threads + autoescalado
+          horizontal en Kubernetes
+        </li>
+        <li>
+          <strong>Performance:</strong> 1,000+ notificaciones/segundo por pod
+        </li>
+        <li>
+          <strong>Priorización:</strong> Sistema de prioridades para
+          notificaciones críticas
+        </li>
+        <li>
+          <strong>Multi-canal:</strong> Email, SMS y Push con configuración
+          flexible
+        </li>
+        <li>
+          <strong>Cumplimiento normativo:</strong> Mínimo 2 canales, auditoría
+          completa, GDPR
+        </li>
+        <li>
+          <strong>Bajo costo:</strong> ~$90/mes usando Firebase y SMTP propio
+        </li>
+        <li>
+          <strong>Monitoreo:</strong> Bull Board + Prometheus + Elasticsearch
+        </li>
+        <li>
+          <strong>Resiliencia:</strong> Reintentos automáticos, DLQ, manejo de
+          fallos por canal
+        </li>
+      </ul>
+      <p>
+        <strong>Beneficio clave:</strong> Notificaciones confiables en menos de
+        30 segundos sin afectar el rendimiento de las transacciones principales.
+      </p>
     </div>
-</div>
 
-<h2>7.14 Diagrama de Arquitectura Consolidado</h2>
-
-<div class="section">
-    <div class="diagram">
-        <div class="diagram-title">Vista Completa del Sistema de Notificaciones</div>
-        <pre>
-┌─────────────────────────────────────────────────────────────┐
-│                    MICROSERVICIOS                           │
-│  MS-Pagos | MS-Auth | MS-Datos-Cliente | MS-Auditoría      │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ Publish Events
-                ┌──────────▼──────────┐
-                │   KAFKA CLUSTER     │
-                │  Topic: notifications│
-                │  - 5 partitions     │
-                │  - RF: 3            │
-                └──────────┬──────────┘
-                           │ Consumer Group
-                ┌──────────▼────────────────────────┐
-                │   MS-NOTIFICACIONES              │
-                │   Node.js + Worker Threads        │
-                │                                   │
-                │  ┌─────────────────────────┐     │
-                │  │  Main Thread            │     │
-                │  │  - Kafka Consumer       │     │
-                │  │  - Job Enqueue          │     │
-                │  │  - Worker Coordination  │     │
-                │  └───────────┬─────────────┘     │
-                │              │                    │
-                │  ┌───────────┴──────────┐        │
-                │  │   Worker Thread Pool │        │
-                │  │   12 Workers Total:  │        │
-                │  │   - 4 Email Workers  │        │
-                │  │   - 4 SMS Workers    │        │
-                │  │   - 4 Push Workers   │        │
-                │  └──────────────────────┘        │
-                └──────────┬────────────────────────┘
-                           │
-         ┌─────────────────┼─────────────────┐
-         │                 │                 │
-    ┌────▼──────┐    ┌─────▼──────┐   ┌─────▼──────┐
-    │Redis Queue│    │Redis Queue │   │Redis Queue │
-    │ (Email)   │    │  (SMS)     │   │  (Push)    │
-    │Bull Queue │    │Bull Queue  │   │Bull Queue  │
-    └────┬──────┘    └─────┬──────┘   └─────┬──────┘
-         │                 │                 │
-    ┌────▼──────┐    ┌─────▼──────┐   ┌─────▼──────┐
-    │ Mailpit   │    │  Firebase  │   │  Firebase  │
-    │   (Dev)   │    │   Cloud    │   │   Cloud    │
-    │    or     │    │ Messaging  │   │ Messaging  │
-    │Nodemailer │    │   (SMS)    │   │   (Push)   │
-    │  (Prod)   │    │            │   │            │
-    └───────────┘    └────────────┘   └────────────┘
-         │                 │                 │
-         └─────────────────┼─────────────────┘
-                           │
-                  ┌────────▼──────────┐
-                  │  ELASTICSEARCH    │
-                  │  Audit Logs       │
-                  │  Retention: 2 años│
-                  └───────────────────┘
-        </pre>
+    <div class="footer">
+      <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 7 de 17</p>
     </div>
-</div>
-
-<div class="success">
-    <h3>✅ Resumen del Capítulo</h3>
-    <p>El sistema de notificaciones propuesto ofrece:</p>
-    <ul>
-        <li><strong>Alta disponibilidad:</strong> Arquitectura basada en colas resiliente a fallos</li>
-        <li><strong>Escalabilidad:</strong> Worker Threads + autoescalado horizontal en Kubernetes</li>
-        <li><strong>Performance:</strong> 1,000+ notificaciones/segundo por pod</li>
-        <li><strong>Priorización:</strong> Sistema de prioridades para notificaciones críticas</li>
-        <li><strong>Multi-canal:</strong> Email, SMS y Push con configuración flexible</li>
-        <li><strong>Cumplimiento normativo:</strong> Mínimo 2 canales, auditoría completa, GDPR</li>
-        <li><strong>Bajo costo:</strong> ~$90/mes usando Firebase y SMTP propio</li>
-        <li><strong>Monitoreo:</strong> Bull Board + Prometheus + Elasticsearch</li>
-        <li><strong>Resiliencia:</strong> Reintentos automáticos, DLQ, manejo de fallos por canal</li>
-    </ul>
-    <p><strong>Beneficio clave:</strong> Notificaciones confiables en menos de 30 segundos sin afectar el rendimiento de las transacciones principales.</p>
-</div>
-
-<div class="footer">
-    <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 7 de 17</p>
-</div>
-
-</body>
+    <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
+  </body>
 </html>

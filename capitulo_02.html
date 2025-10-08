@@ -5,6 +5,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Capítulo 2 - Arquitectura General del Sistema</title>
     <link rel="stylesheet" href="styles.css" />
+    <style>
+      .table-container {
+        overflow-x: auto;
+      }
+
+      .table-container tbody tr:nth-of-type(1) {
+        background-color: hsl(210, 80%, 95%);
+      }
+      .table-container tbody tr:nth-of-type(2) {
+        background-color: hsl(210, 80%, 96%);
+      }
+      .table-container tbody tr:nth-of-type(3) {
+        background-color: hsl(210, 80%, 97%);
+      }
+      .table-container tbody tr:nth-of-type(4) {
+        background-color: hsl(210, 80%, 98%);
+      }
+      .table-container tbody tr:nth-of-type(5) {
+        background-color: hsl(210, 80%, 98.5%);
+      }
+      .table-container tbody tr:nth-of-type(6) {
+        background-color: hsl(210, 80%, 99%);
+      }
+      .table-container tbody tr:nth-of-type(7) {
+        background-color: hsl(210, 80%, 99.5%);
+      }
+
+      .table-container tbody tr td:first-child {
+        font-weight: 500;
+        color: #0056b3;
+      }
+
+      code {
+        background-color: #e9ecef;
+        padding: 2px 5px;
+        border-radius: 4px;
+        font-family: "SF Mono", "Fira Code", monospace;
+      }
+
+      .ddd-highlight {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 8px;
+        margin: 20px 0;
+      }
+
+      .hexagonal-box {
+        border: 3px solid #667eea;
+        padding: 15px;
+        margin: 15px 0;
+        border-radius: 8px;
+        background: #f8f9ff;
+      }
+
+      .architecture-layer {
+        border-left: 4px solid #667eea;
+        padding-left: 15px;
+        margin: 10px 0;
+      }
+    </style>
   </head>
   <body>
     <div class="nav-header">
@@ -17,6 +78,23 @@
     </div>
 
     <h1>2. ARQUITECTURA GENERAL DEL SISTEMA</h1>
+
+    <div class="ddd-highlight">
+      <h2>🎯 Enfoque Arquitectónico: Domain-Driven Design (DDD)</h2>
+      <p>
+        Este sistema está fundamentado en los principios de
+        <strong>Domain-Driven Design (DDD)</strong> combinado con
+        <strong>Arquitectura Hexagonal (Puertos y Adaptadores)</strong>. Cada
+        microservicio representa un <strong>Bounded Context</strong> del dominio
+        bancario, con su propio modelo de dominio, lenguaje ubicuo y reglas de
+        negocio encapsuladas.
+      </p>
+      <p>
+        <strong>Principio fundamental:</strong> El dominio de negocio está en el
+        centro, completamente aislado de detalles técnicos de infraestructura
+        mediante puertos y adaptadores.
+      </p>
+    </div>
 
     <h2>2.1 Vista de Contexto</h2>
 
@@ -55,62 +133,305 @@
       </ul>
     </div>
 
-    <h2>2.2 Diagrama de Contexto</h2>
+    <h2>2.2 Contextos Delimitados (Bounded Contexts) - DDD</h2>
 
-    <div class="diagram">
-      <div class="diagram-title">Arquitectura de Alto Nivel</div>
-      <pre>
-┌──────────────────────────────────────────────────────────────┐
-│                       USUARIOS FINALES                        │
-│                                                               │
-│    ┌─────────────┐              ┌──────────────┐            │
-│    │   SPA Web   │              │  App Móvil   │            │
-│    │  (ReactJS)  │              │ (React Native)│            │
-│    └──────┬──────┘              └───────┬──────┘            │
-└───────────┼─────────────────────────────┼───────────────────┘
-            │                             │
-            └──────────────┬──────────────┘
-                           │ HTTPS/TLS 1.3
-            ┌──────────────▼──────────────┐
-            │     WAF (Cloudflare/AWS)    │
-            │  - DDoS Protection          │
-            │  - Bot Protection           │
-            │  - OWASP Top 10             │
-            └──────────────┬──────────────┘
-                           │
-            ┌──────────────▼──────────────┐
-            │  APOLLO GATEWAY             │
-            │  (GraphQL Federation)       │
-            │  - Rate Limiting            │
-            │  - JWT Validation           │
-            │  - Query Complexity Limit   │
-            └──────────────┬──────────────┘
-                           │
-        ┌──────────────────┼──────────────────┐
-        │                  │                  │
-┌───────▼────────┐  ┌──────▼───────┐  ┌──────▼──────────┐
-│ Microservicio  │  │ Microservicio│  │  Microservicio  │
-│  Históricos    │  │ Transferencias│  │  Autenticación  │
-│  (GraphQL)     │  │  (GraphQL +   │  │  (REST)         │
-│  + Workers     │  │   SAGA)       │  │  + OAuth 2.0    │
-└────────────────┘  └──────────────┘  └─────────────────┘
-        │                  │                  │
-        └──────────────────┼──────────────────┘
-                           │
-            ┌──────────────▼──────────────┐
-            │  KAFKA MESSAGE BUS          │
-            │  + ZooKeeper Cluster        │
-            │  Topics: SAGA, Events, Logs │
-            └─────────────────────────────┘
-    </pre
-      >
+    <div class="section">
+      <div class="hexagonal-box">
+        <h3>🔷 ¿Qué es un Bounded Context?</h3>
+        <p>
+          En DDD, un <strong>Bounded Context</strong> es una frontera explícita
+          dentro de la cual un modelo de dominio específico es válido. Cada
+          contexto tiene su propio lenguaje ubicuo (Ubiquitous Language) y sus
+          propias reglas de negocio.
+        </p>
+        <p>
+          <strong
+            >En nuestro sistema bancario, identificamos 3 Bounded Contexts
+            principales:</strong
+          >
+        </p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Bounded Context</th>
+            <th>Responsabilidad de Dominio</th>
+            <th>Entidades Principales</th>
+            <th>Lenguaje Ubicuo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Context: Históricos</strong></td>
+            <td>Gestión de consultas y reportes de transacciones históricas</td>
+            <td>Transaction, AccountStatement, MovementFilter</td>
+            <td>Movimiento, Saldo, Período, Filtro</td>
+          </tr>
+          <tr>
+            <td><strong>Context: Transferencias</strong></td>
+            <td>
+              Ejecución de transferencias bancarias con consistencia
+              transaccional
+            </td>
+            <td>Transfer, Account, TransferSaga, Compensation</td>
+            <td>Transferencia, Débito, Crédito, Compensación</td>
+          </tr>
+          <tr>
+            <td><strong>Context: Autenticación</strong></td>
+            <td>Control de acceso, identidad y autorización de usuarios</td>
+            <td>User, Session, BiometricCredential, Token</td>
+            <td>Usuario, Sesión, Credencial, Autenticación</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>Nota DDD:</strong> Cada Bounded Context se implementa como un
+        microservicio independiente con su propia base de datos, garantizando la
+        autonomía del dominio y evitando el acoplamiento de modelos.
+      </div>
     </div>
 
-    <h2>2.3 Justificación de Decisiones Arquitectónicas</h2>
+    <h2>2.3 Arquitectura Hexagonal (Puertos y Adaptadores)</h2>
+
+    <div class="section">
+      <div class="hexagonal-box">
+        <h3>⬡ Arquitectura Hexagonal en cada Microservicio</h3>
+        <p>
+          Cada Bounded Context (microservicio) sigue la
+          <strong>Arquitectura Hexagonal</strong>, que separa el dominio de
+          negocio de los detalles de infraestructura mediante:
+        </p>
+        <ul>
+          <li>
+            <strong>Dominio (Centro):</strong> Entidades, Value Objects,
+            Agregados, Domain Services
+          </li>
+          <li>
+            <strong>Puertos:</strong> Interfaces que definen cómo el dominio
+            interactúa con el exterior
+          </li>
+          <li>
+            <strong>Adaptadores:</strong> Implementaciones concretas de los
+            puertos (GraphQL, REST, Kafka, Bases de Datos)
+          </li>
+        </ul>
+      </div>
+
+      <div class="architecture-layer">
+        <h4>🔹 Capa de Dominio (Core)</h4>
+        <p>
+          <strong>Responsabilidad:</strong> Lógica de negocio pura,
+          independiente de frameworks y tecnología.
+        </p>
+        <p><strong>Componentes:</strong></p>
+        <ul>
+          <li>
+            <strong>Entidades:</strong> Objetos con identidad única (ej:
+            Transfer, Account, User)
+          </li>
+          <li>
+            <strong>Value Objects:</strong> Objetos inmutables sin identidad
+            (ej: Money, AccountNumber, Email)
+          </li>
+          <li>
+            <strong>Agregados:</strong> Conjuntos de entidades con un root (ej:
+            TransferAggregate)
+          </li>
+          <li>
+            <strong>Domain Events:</strong> Eventos que representan hechos del
+            negocio (ej: TransferCompleted)
+          </li>
+          <li>
+            <strong>Domain Services:</strong> Lógica que no pertenece a una
+            entidad específica
+          </li>
+        </ul>
+      </div>
+
+      <div class="architecture-layer">
+        <h4>🔹 Puertos (Interfaces)</h4>
+        <p>
+          <strong>Responsabilidad:</strong> Contratos que definen cómo el
+          dominio se comunica con el exterior.
+        </p>
+        <p><strong>Tipos de Puertos:</strong></p>
+        <ul>
+          <li>
+            <strong>Puertos de Entrada (Driving/Primary):</strong> Casos de uso
+            que el exterior invoca (ej: TransferUseCase)
+          </li>
+          <li>
+            <strong>Puertos de Salida (Driven/Secondary):</strong> Interfaces
+            que el dominio necesita (ej: TransferRepository, EventPublisher)
+          </li>
+        </ul>
+      </div>
+
+      <div class="architecture-layer">
+        <h4>🔹 Adaptadores</h4>
+        <p>
+          <strong>Responsabilidad:</strong> Implementaciones concretas de los
+          puertos, conectando el dominio con tecnologías específicas.
+        </p>
+        <p><strong>Tipos de Adaptadores:</strong></p>
+        <ul>
+          <li>
+            <strong>Adaptadores de Entrada:</strong> GraphQL Resolvers, REST
+            Controllers, Kafka Consumers
+          </li>
+          <li>
+            <strong>Adaptadores de Salida:</strong> PostgreSQL Repository,
+            MongoDB Repository, Kafka Producer, Redis Cache
+          </li>
+        </ul>
+      </div>
+
+      <div class="success">
+        <strong>✓ Beneficios de Arquitectura Hexagonal:</strong>
+        <ul>
+          <li>Dominio completamente testeable sin dependencias externas</li>
+          <li>Cambiar tecnologías (BD, API) sin tocar lógica de negocio</li>
+          <li>Facilita testing con mocks de adaptadores</li>
+          <li>Mantiene el foco en el dominio, no en la tecnología</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>2.4 Diagrama de Contexto</h2>
+
+    <div class="diagram">
+      <div class="diagram-title">
+        Arquitectura de Alto Nivel (Bounded Contexts + Hexagonal)
+      </div>
+      <pre class="mermaid">
+flowchart TD
+  Users["USUARIOS FINALES"]
+  WebSPA["SPA&nbsp;Web&nbsp;(ReactJS)<br/>
+            [Adaptador: UI]"]
+  MobileApp["App&nbsp;Móvil&nbsp;(React&nbsp;Native)<br/>
+            [Adaptador: UI]"]
+  WAF["WAF (Cloudflare/AWS) 
+       - DDoS Protection
+       - Bot Protection
+       - OWASP Top 10"]
+  Gateway["APOLLO GATEWAY<br/>
+       .GraphQL Federation<br/>
+       .Puerto&nbsp;de&nbsp;Entrada&nbsp;Principal<br/>"]
+  
+  subgraph BC1["🔷 BOUNDED CONTEXT: HISTÓRICOS"]
+    MS1["Microservicio&nbsp;Históricos
+          [Arquitectura Hexagonal]
+          • Dominio: Transactions
+          • Puertos: Queries
+          • Adaptadores: GraphQL, MongoDB"]
+  end
+  
+  subgraph BC2["🔷 BOUNDED CONTEXT: TRANSFERENCIAS"]
+    MS2["Microservicio&nbsp;Transferencias
+    [Arquitectura Hexagonal]
+    • Dominio: Transfers + SAGA
+    • Puertos: Commands
+    • Adaptadores: GraphQL, PostgreSQL, Kafka"]
+  end
+  
+  subgraph BC3["🔷 BOUNDED CONTEXT: AUTENTICACIÓN"]
+    MS3["Microservicio&nbsp;Autenticación
+    [Arquitectura Hexagonal]
+    • Dominio: Identity
+    • Puertos: AuthService
+    • Adaptadores: REST, OAuth 2.0"]
+  end
+  
+  Kafka["KAFKA MESSAGE BUS
+          [Adaptador&nbsp;de&nbsp;Comunicación]
+            Topics:&nbsp;SAGA,&nbsp;Domain&nbsp;Events,&nbsp;Logs"]
+
+  Users --> WebSPA & MobileApp
+  WebSPA & MobileApp -->|HTTPS/TLS 1.3| WAF
+  WAF --> Gateway
+  Gateway --> MS1 & MS2 & MS3
+  MS1 & MS2 & MS3 --> Kafka
+
+  classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+  classDef gateway fill:#e1f3d8,stroke:#82c91e;
+  classDef services fill:#d0ebff,stroke:#339af0;
+  classDef messaging fill:#fff3bf,stroke:#f59f00;
+
+  class WAF,Gateway gateway;
+  class MS1,MS2,MS3 services;
+  class Kafka messaging;
+  </pre>
+    </div>
+
+    <h2>2.5 Justificación de Decisiones Arquitectónicas</h2>
 
     <div class="section">
       <div class="justification">
-        <div class="justification-title">1. WAF (Web Application Firewall)</div>
+        <div class="justification-title">1. Domain-Driven Design (DDD)</div>
+        <p>
+          <strong>Decisión:</strong> Adoptar DDD como filosofía de diseño
+          principal
+        </p>
+        <p><strong>Justificación:</strong></p>
+        <ul>
+          <li>
+            <strong>Complejidad del dominio bancario:</strong> DDD es ideal para
+            dominios complejos con muchas reglas de negocio
+          </li>
+          <li>
+            <strong>Lenguaje ubicuo:</strong> Desarrolladores y expertos del
+            dominio hablan el mismo idioma
+          </li>
+          <li>
+            <strong>Bounded Contexts:</strong> Permite dividir el sistema en
+            partes manejables e independientes
+          </li>
+          <li>
+            <strong>Evolución controlada:</strong> Cambios en un contexto no
+            afectan otros
+          </li>
+          <li>
+            <strong>Testing simplificado:</strong> Dominio puro sin dependencias
+            externas
+          </li>
+        </ul>
+      </div>
+
+      <div class="justification">
+        <div class="justification-title">
+          2. Arquitectura Hexagonal (Puertos y Adaptadores)
+        </div>
+        <p>
+          <strong>Decisión:</strong> Implementar arquitectura hexagonal en cada
+          microservicio
+        </p>
+        <p><strong>Justificación:</strong></p>
+        <ul>
+          <li>
+            <strong>Independencia tecnológica:</strong> Cambiar BD o API sin
+            tocar dominio
+          </li>
+          <li>
+            <strong>Testabilidad:</strong> Probar lógica de negocio sin
+            infraestructura
+          </li>
+          <li>
+            <strong>Mantenibilidad:</strong> Dominio aislado facilita cambios
+          </li>
+          <li>
+            <strong>Flexibilidad:</strong> Agregar nuevos adaptadores sin
+            modificar dominio
+          </li>
+          <li>
+            <strong>Claridad:</strong> Separación explícita de responsabilidades
+          </li>
+        </ul>
+      </div>
+
+      <div class="justification">
+        <div class="justification-title">3. WAF (Web Application Firewall)</div>
         <p>
           <strong>Decisión:</strong> Cloudflare WAF o AWS WAF como primera línea
           de defensa
@@ -129,7 +450,7 @@
 
       <div class="justification">
         <div class="justification-title">
-          2. Apollo Gateway con GraphQL Federation
+          4. Apollo Gateway con GraphQL Federation
         </div>
         <p>
           <strong>Decisión:</strong> Punto único de entrada con GraphQL como
@@ -165,13 +486,19 @@
       </div>
 
       <div class="justification">
-        <div class="justification-title">3. Arquitectura de Microservicios</div>
+        <div class="justification-title">
+          5. Microservicios por Bounded Context
+        </div>
         <p>
-          <strong>Decisión:</strong> Separación en servicios independientes por
-          dominio de negocio
+          <strong>Decisión:</strong> Cada Bounded Context es un microservicio
+          independiente
         </p>
         <p><strong>Justificación:</strong></p>
         <ul>
+          <li>
+            <strong>Alineación DDD:</strong> Un microservicio = Un Bounded
+            Context
+          </li>
           <li>
             <strong>Escalabilidad independiente:</strong> Cada servicio escala
             según su carga específica
@@ -189,18 +516,14 @@
             para cada problema
           </li>
           <li>
-            <strong>Equipos autónomos:</strong> Cada equipo puede trabajar
-            independientemente
-          </li>
-          <li>
-            <strong>Facilita testing:</strong> Tests unitarios e integración más
-            simples
+            <strong>Equipos autónomos:</strong> Cada equipo trabaja en su
+            contexto
           </li>
         </ul>
       </div>
     </div>
 
-    <h2>2.4 Componentes Principales del Sistema</h2>
+    <h2>2.6 Componentes Principales del Sistema</h2>
 
     <div class="section">
       <table>
@@ -234,14 +557,16 @@
           <tr>
             <td><strong>Microservicios</strong></td>
             <td>Node.js + GraphQL</td>
-            <td>Lógica de negocio</td>
+            <td>Lógica de negocio (Dominio DDD)</td>
             <td>Worker Threads para paralelismo, GraphQL eficiente</td>
           </tr>
           <tr>
             <td><strong>Message Bus</strong></td>
             <td>Apache Kafka</td>
-            <td>Comunicación asíncrona</td>
-            <td>Alta throughput, durabilidad, ideal para SAGA</td>
+            <td>Comunicación asíncrona entre contexts</td>
+            <td>
+              Alta throughput, durabilidad, ideal para SAGA y Domain Events
+            </td>
           </tr>
           <tr>
             <td><strong>Orquestador</strong></td>
@@ -252,13 +577,13 @@
           <tr>
             <td><strong>Bases de Datos</strong></td>
             <td>PostgreSQL + MongoDB</td>
-            <td>Persistencia</td>
+            <td>Persistencia (Database per Service)</td>
             <td>CQRS: PostgreSQL para escritura, MongoDB para lectura</td>
           </tr>
           <tr>
             <td><strong>Caché</strong></td>
             <td>Redis</td>
-            <td>Caché + Sesiones + SAGA</td>
+            <td>Caché + Sesiones + SAGA State</td>
             <td>Performance, estado temporal de SAGAs</td>
           </tr>
           <tr>
@@ -271,48 +596,171 @@
       </table>
     </div>
 
-    <h2>2.5 Flujo de Datos Principal</h2>
+    <h2>2.7 Flujo de Datos Principal</h2>
 
     <div class="section">
       <div class="diagram">
-        <div class="diagram-title">Flujo de Request Típico</div>
-        <pre>
-Usuario (App) → Solicita consulta de movimientos
-    │
-    ├─► GraphQL Query enviada via HTTPS
-    │
-    ▼
-WAF → Valida origen, detecta patrones maliciosos
-    │
-    ├─► ✓ Request limpia
-    │
-    ▼
-Apollo Gateway → Valida JWT, analiza complexity
-    │
-    ├─► Enruta a MS-Históricos (subgraph)
-    │
-    ▼
-MS-Históricos → Consulta MongoDB (Read DB)
-    │
-    ├─► Caché hit en Redis (70% casos)
-    ├─► Caché miss → Query a MongoDB
-    │
-    ▼
-Respuesta → GraphQL response con solo campos solicitados
-    │
-    ├─► 4 KB de datos (vs 11 KB en REST)
-    ├─► Latencia: 120ms (vs 350ms en REST)
-    │
-    ▼
-Usuario recibe datos optimizados
-        </pre>
+        <div class="diagram-title">
+          Flujo de Request Típico (Arquitectura Hexagonal)
+        </div>
+        <pre class="mermaid">
+sequenceDiagram
+  actor U as Usuario (App)
+  participant A as Adaptador UI
+  participant W as WAF
+  participant AG as Apollo Gateway (Puerto)
+  participant GR as GraphQL Resolver (Adaptador Entrada)
+  participant UC as Use Case (Puerto Entrada)
+  participant DS as Domain Service (Dominio)
+  participant RP as Repository Port (Puerto Salida)
+  participant DB as DB Adapter (Adaptador Salida)
+  participant Cache as Redis Cache
+
+  U->>A: Solicita movimientos
+  A->>W: GraphQL Query (HTTPS)
+  Note over W: Valida seguridad
+  
+  W->>AG: ✓ Request limpia
+  Note over AG: Puerto de entrada principal<br/>Valida JWT
+  
+  AG->>GR: Enruta query
+  Note over GR: Adaptador de entrada GraphQL
+  
+  GR->>UC: Ejecuta caso de uso
+  Note over UC: Puerto de entrada<br/>GetAccountMovements
+  
+  UC->>DS: Aplica lógica dominio
+  Note over DS: DOMINIO PURO<br/>Reglas de negocio
+  
+  DS->>RP: Solicita datos
+  Note over RP: Puerto de salida<br/>TransactionRepository interface
+  
+  RP->>Cache: Intenta cache
+  Cache-->>RP: Cache miss
+  
+  RP->>DB: Query BD
+  Note over DB: Adaptador MongoDB<br/>Implementa Repository Port
+  
+  DB-->>RP: Retorna datos
+  RP-->>DS: Entities de dominio
+  DS-->>UC: Datos procesados
+  UC-->>GR: DTO de salida
+  GR-->>AG: GraphQL response
+  AG-->>W: Datos optimizados
+  W-->>A: 4 KB vs 11 KB REST
+  A-->>U: Renderiza UI
+  Note over U: 120ms vs 350ms latencia
+    </pre>
+      </div>
+
+      <div class="note">
+        <strong>Nota Arquitectónica:</strong> Observa cómo el flujo pasa por
+        capas bien definidas:
+        <ul>
+          <li>
+            <strong>Adaptadores de Entrada:</strong> GraphQL Resolver recibe el
+            request
+          </li>
+          <li>
+            <strong>Puerto de Entrada:</strong> Use Case define el contrato
+          </li>
+          <li>
+            <strong>Dominio:</strong> Lógica de negocio pura, sin dependencias
+            externas
+          </li>
+          <li><strong>Puerto de Salida:</strong> Interface Repository</li>
+          <li>
+            <strong>Adaptador de Salida:</strong> Implementación concreta
+            (MongoDB, Redis)
+          </li>
+        </ul>
       </div>
     </div>
 
-    <h2>2.6 Principios Arquitectónicos</h2>
+    <h2>2.8 Principios Arquitectónicos</h2>
 
     <div class="section">
-      <h3>2.6.1 Principios Fundamentales</h3>
+      <h3>2.8.1 Principios Fundamentales DDD</h3>
+
+      <ol>
+        <li>
+          <strong>Ubiquitous Language (Lenguaje Ubicuo):</strong>
+          <p>
+            El código usa exactamente los mismos términos que los expertos del
+            dominio. No hay traducción entre negocio y técnico: "Transfer",
+            "Account", "Compensation" son nombres tanto en el código como en las
+            conversaciones de negocio.
+          </p>
+        </li>
+
+        <li>
+          <strong>Bounded Contexts Independientes:</strong>
+          <p>
+            Cada contexto (Históricos, Transferencias, Autenticación) tiene su
+            propio modelo y no comparte entidades con otros contextos. La
+            comunicación es via Domain Events.
+          </p>
+        </li>
+
+        <li>
+          <strong>Domain at the Core (Dominio en el Centro):</strong>
+          <p>
+            La lógica de negocio está completamente aislada de frameworks, bases
+            de datos, y APIs. El dominio no conoce GraphQL, ni PostgreSQL, ni
+            Kafka.
+          </p>
+        </li>
+
+        <li>
+          <strong>Agregados con Raíz:</strong>
+          <p>
+            Conjuntos de entidades relacionadas se agrupan en Agregados con una
+            raíz que garantiza la consistencia. Ejemplo: TransferAggregate
+            controla Transfer + TransferLine.
+          </p>
+        </li>
+
+        <li>
+          <strong>Domain Events:</strong>
+          <p>
+            Los hechos importantes del dominio se modelan como eventos:
+            TransferCompleted, AccountDebited, CompensationTriggered. Facilitan
+            comunicación entre contextos.
+          </p>
+        </li>
+      </ol>
+
+      <h3>2.8.2 Principios de Arquitectura Hexagonal</h3>
+
+      <ol>
+        <li>
+          <strong>Dependency Inversion:</strong>
+          <p>
+            El dominio define interfaces (puertos), y la infraestructura las
+            implementa (adaptadores). Nunca al revés. El dominio no depende de
+            nadie.
+          </p>
+        </li>
+
+        <li>
+          <strong>Ports and Adapters:</strong>
+          <p>
+            Toda comunicación con el exterior se hace mediante puertos
+            (interfaces) y adaptadores (implementaciones). Podemos cambiar de
+            GraphQL a gRPC sin tocar el dominio.
+          </p>
+        </li>
+
+        <li>
+          <strong>Testabilidad Total:</strong>
+          <p>
+            El dominio se testea con mocks de puertos, sin necesidad de levantar
+            bases de datos o servidores. Tests rápidos y confiables.
+          </p>
+        </li>
+      </ol>
+
+      <h3>2.8.3 Otros Principios Arquitectónicos</h3>
 
       <ol>
         <li>
@@ -320,14 +768,6 @@ Usuario recibe datos optimizados
           <p>
             Diseñar APIs antes de implementar, con GraphQL como protocolo
             principal para máxima eficiencia.
-          </p>
-        </li>
-
-        <li>
-          <strong>Desacoplamiento Total:</strong>
-          <p>
-            Microservicios independientes comunicados vía eventos asíncronos
-            (Kafka).
           </p>
         </li>
 
@@ -358,7 +798,7 @@ Usuario recibe datos optimizados
         </li>
       </ol>
 
-      <h3>2.6.2 Patrones Arquitectónicos Utilizados</h3>
+      <h3>2.8.4 Patrones Arquitectónicos Utilizados</h3>
 
       <table>
         <thead>
@@ -369,6 +809,16 @@ Usuario recibe datos optimizados
           </tr>
         </thead>
         <tbody>
+          <tr>
+            <td><strong>Bounded Context</strong></td>
+            <td>División del sistema en contextos</td>
+            <td>Modelos de dominio independientes y mantenibles</td>
+          </tr>
+          <tr>
+            <td><strong>Hexagonal Architecture</strong></td>
+            <td>Estructura interna de microservicios</td>
+            <td>Dominio aislado de tecnología</td>
+          </tr>
           <tr>
             <td><strong>CQRS</strong></td>
             <td>Separación lectura/escritura</td>
@@ -383,6 +833,11 @@ Usuario recibe datos optimizados
             <td><strong>Event Sourcing</strong></td>
             <td>Auditoría y sincronización</td>
             <td>Trazabilidad completa, replay de eventos</td>
+          </tr>
+          <tr>
+            <td><strong>Domain Events</strong></td>
+            <td>Comunicación entre Bounded Contexts</td>
+            <td>Desacoplamiento total entre contextos</td>
           </tr>
           <tr>
             <td><strong>Circuit Breaker</strong></td>
@@ -408,76 +863,330 @@ Usuario recibe datos optimizados
       </table>
     </div>
 
-    <h2>2.7 Capas de la Arquitectura</h2>
+    <h2>2.9 Capas de la Arquitectura (Visión Macro)</h2>
 
     <div class="section">
-      <div class="diagram">
-        <div class="diagram-title">Arquitectura en Capas</div>
-        <pre>
-┌─────────────────────────────────────────────────────┐
-│ CAPA 1: PRESENTACIÓN                                │
-│ - SPA React (Web)                                   │
-│ - React Native (iOS/Android)                        │
-│ - Apollo Client (GraphQL)                           │
-└─────────────────────────────────────────────────────┘
-                        │
-┌─────────────────────────────────────────────────────┐
-│ CAPA 2: API GATEWAY                                 │
-│ - Apollo Gateway (GraphQL Federation)               │
-│ - Kong/NGINX (REST endpoints)                       │
-│ - Rate Limiting, Auth, Logging                      │
-└─────────────────────────────────────────────────────┘
-                        │
-┌─────────────────────────────────────────────────────┐
-│ CAPA 3: SERVICIOS DE APLICACIÓN                    │
-│ - Microservicios Node.js                            │
-│ - GraphQL APIs (95%)                                │
-│ - REST APIs (5% - archivos, webhooks)              │
-│ - Worker Threads para procesamiento paralelo        │
-└─────────────────────────────────────────────────────┘
-                        │
-┌─────────────────────────────────────────────────────┐
-│ CAPA 4: MENSAJERÍA                                  │
-│ - Apache Kafka (Event Bus)                          │
-│ - ZooKeeper (Coordinación)                          │
-│ - Topics: SAGA, Audit, Sync, Notifications          │
-└─────────────────────────────────────────────────────┘
-                        │
-┌─────────────────────────────────────────────────────┐
-│ CAPA 5: PERSISTENCIA                                │
-│ - PostgreSQL (Write DB - ACID)                      │
-│ - MongoDB (Read DB - Optimizada)                    │
-│ - Redis (Cache + Sessions + SAGA State)             │
-│ - Elasticsearch (Logs + Auditoría)                  │
-└─────────────────────────────────────────────────────┘
-                        │
-┌─────────────────────────────────────────────────────┐
-│ CAPA 6: INFRAESTRUCTURA                             │
-│ - Kubernetes (Orquestación)                         │
-│ - Docker (Contenedores)                             │
-│ - Prometheus + Grafana (Métricas)                   │
-│ - ELK Stack (Logs)                                  │
-└─────────────────────────────────────────────────────┘
-        </pre>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Capa</th>
+              <th>Responsabilidad Principal</th>
+              <th>Tecnologías Clave</th>
+              <th>Flujo / Interacciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><b>Capa 1: Presentación</b> 🖼️</td>
+              <td>
+                Interfaz con la que interactúa el usuario final (Cliente
+                Web/Móvil). <strong>[Adaptador de UI]</strong>
+              </td>
+              <td>
+                <code>React</code>, <code>React Native</code>,
+                <code>Apollo Client</code>
+              </td>
+              <td>Envía peticiones del usuario hacia el API Gateway.</td>
+            </tr>
+            <tr>
+              <td><b>Capa 2: API Gateway</b> 🚪</td>
+              <td>
+                Punto de entrada único que gestiona la seguridad y el
+                enrutamiento. <strong>[Puerto Principal]</strong>
+              </td>
+              <td>
+                <code>Apollo Gateway</code>, <code>Kong</code>,
+                <code>NGINX</code>
+              </td>
+              <td>
+                Recibe peticiones de la Capa 1 y las dirige a los servicios
+                correspondientes.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Capa 3: Bounded Contexts</b> 🧠</td>
+              <td>
+                Microservicios con arquitectura hexagonal. Contienen dominio +
+                puertos + adaptadores. <strong>[Microservicios DDD]</strong>
+              </td>
+              <td><code>Microservicios en Node.js</code></td>
+              <td>
+                Recibe peticiones del API Gateway y utiliza las capas de
+                Mensajería y Persistencia.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Capa 4: Mensajería</b> 📨</td>
+              <td>
+                Gestiona comunicación asíncrona y Domain Events entre Bounded
+                Contexts.
+                <strong>[Adaptador de Comunicación]</strong>
+              </td>
+              <td><code>Apache Kafka</code></td>
+              <td>
+                Es utilizada por los Bounded Contexts para publicar/consumir
+                Domain Events.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Capa 5: Persistencia</b> 💾</td>
+              <td>
+                Almacenamiento y recuperación de datos. Cada contexto tiene su
+                propia BD.
+                <strong>[Adaptadores de BD]</strong>
+              </td>
+              <td><code>PostgreSQL, MongoDB, Redis</code></td>
+              <td>
+                Provee los datos que los Domain Services necesitan para operar.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Capa 6: Infraestructura</b> 🏗️</td>
+              <td>
+                Orquesta y ejecuta todos los servicios del backend en
+                contenedores.
+              </td>
+              <td><code>Kubernetes</code>, <code>Docker</code></td>
+              <td>
+                Es la base sobre la que se despliegan y operan las capas 3, 4 y
+                5.
+              </td>
+            </tr>
+            <tr>
+              <td><b>Capa Transversal: Observabilidad</b> 📊</td>
+              <td>Monitorea la salud y el rendimiento de todo el sistema.</td>
+              <td>
+                <code>Prometheus</code>, <code>Grafana</code>,
+                <code>ELK Stack</code>
+              </td>
+              <td>
+                Recopila métricas y logs de todas las demás capas para análisis
+                y alertas.
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <h2>2.8 Consideraciones de Diseño</h2>
+    <h2>2.10 Estructura de un Microservicio (Ejemplo: Transferencias)</h2>
+
+    <div class="section">
+      <div class="hexagonal-box">
+        <h3>⬡ Anatomía de un Bounded Context con Arquitectura Hexagonal</h3>
+        <p>
+          Cada microservicio sigue esta estructura de carpetas que refleja las
+          capas hexagonales:
+        </p>
+      </div>
+
+      <div class="code-section">
+        <pre><code>ms-transferencias/
+├── src/
+│   ├── domain/                    # 🟦 CAPA DE DOMINIO (Centro del Hexágono)
+│   │   ├── entities/              # Entidades con identidad
+│   │   │   ├── Transfer.ts        # Entidad Transfer
+│   │   │   ├── Account.ts         # Entidad Account
+│   │   │   └── TransferLine.ts
+│   │   ├── value-objects/         # Objetos de valor inmutables
+│   │   │   ├── Money.ts
+│   │   │   ├── AccountNumber.ts
+│   │   │   └── TransferId.ts
+│   │   ├── aggregates/            # Raíces de agregado
+│   │   │   └── TransferAggregate.ts
+│   │   ├── events/                # Domain Events
+│   │   │   ├── TransferCreated.ts
+│   │   │   ├── TransferCompleted.ts
+│   │   │   └── CompensationTriggered.ts
+│   │   ├── services/              # Domain Services
+│   │   │   ├── TransferValidator.ts
+│   │   │   └── CompensationService.ts
+│   │   └── exceptions/            # Excepciones de dominio
+│   │       └── InsufficientFundsError.ts
+│   │
+│   ├── application/               # 🟩 PUERTOS (Casos de Uso)
+│   │   ├── ports/
+│   │   │   ├── in/               # Puertos de Entrada (Driving)
+│   │   │   │   ├── CreateTransferUseCase.ts
+│   │   │   │   ├── CancelTransferUseCase.ts
+│   │   │   │   └── GetTransferStatusUseCase.ts
+│   │   │   └── out/              # Puertos de Salida (Driven)
+│   │   │       ├── TransferRepository.ts      # Interface
+│   │   │       ├── AccountRepository.ts       # Interface
+│   │   │       ├── EventPublisher.ts          # Interface
+│   │   │       └── SagaStateRepository.ts     # Interface
+│   │   ├── dto/                  # 📦 DTOs (Data Transfer Objects)
+│   │   │   ├── CreateTransferDto.ts          # Input DTO
+│   │   │   ├── TransferResponseDto.ts        # Output DTO
+│   │   │   ├── CancelTransferDto.ts
+│   │   │   └── TransferStatusDto.ts
+│   │   ├── mappers/              # Mappers: DTO ↔ Domain Entity
+│   │   │   ├── TransferMapper.ts
+│   │   │   └── AccountMapper.ts
+│   │   └── usecases/             # Implementación de casos de uso
+│   │       ├── CreateTransferUseCaseImpl.ts
+│   │       └── CancelTransferUseCaseImpl.ts
+│   │
+│   ├── infrastructure/            # 🟨 ADAPTADORES
+│   │   ├── adapters/
+│   │   │   ├── in/               # Adaptadores de Entrada
+│   │   │   │   ├── graphql/
+│   │   │   │   │   ├── TransferResolver.ts
+│   │   │   │   │   └── schema.graphql
+│   │   │   │   └── kafka/
+│   │   │   │       └── TransferEventConsumer.ts
+│   │   │   └── out/              # Adaptadores de Salida
+│   │   │       ├── postgres/
+│   │   │       │   └── PostgresTransferRepository.ts
+│   │   │       ├── kafka/
+│   │   │       │   └── KafkaEventPublisher.ts
+│   │   │       └── redis/
+│   │   │           └── RedisSagaStateRepository.ts
+│   │   ├── config/               # Configuración
+│   │   │   ├── database.ts
+│   │   │   └── kafka.ts
+│   │   └── migrations/           # Migraciones de BD
+│   │
+│   └── shared/                   # Código compartido
+│       ├── utils/
+│       └── types/
+│
+├── tests/
+│   ├── unit/                     # Tests del dominio (puros)
+│   ├── integration/              # Tests de adaptadores
+│   └── e2e/                      # Tests end-to-end
+│
+└── package.json</code></pre>
+      </div>
+
+      <div class="note">
+        <strong>📦 Sobre los DTOs (Data Transfer Objects):</strong>
+        <p>
+          Los DTOs son objetos simples que transfieren datos entre capas. Son
+          cruciales en arquitectura hexagonal porque:
+        </p>
+        <ul>
+          <li>
+            <strong>Desacoplan el dominio de las APIs:</strong> El dominio no
+            conoce GraphQL, REST o Kafka
+          </li>
+          <li>
+            <strong>Control de datos expuestos:</strong> Solo se expone lo que
+            el API necesita, no toda la entidad
+          </li>
+          <li>
+            <strong>Validación en el borde:</strong> Los DTOs validan datos
+            antes de llegar al dominio
+          </li>
+          <li>
+            <strong>Versionado independiente:</strong> Cambiar API sin cambiar
+            dominio
+          </li>
+        </ul>
+        <p>
+          <strong>Flujo típico:</strong>
+          GraphQL Request → DTO → Mapper → Domain Entity → Use Case → Domain
+          Entity → Mapper → DTO → GraphQL Response
+        </p>
+
+        <p><strong>Ejemplo práctico:</strong></p>
+        <pre
+          style="
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+          "
+        ><code>// 1. GraphQL Resolver recibe el request (Adaptador de Entrada)
+async createTransfer(args: CreateTransferInput) {
+  // 2. Convierte input a DTO
+  const dto = new CreateTransferDto(args);
+  
+  // 3. Mapper convierte DTO → Domain Entity
+  const transfer = TransferMapper.toDomain(dto);
+  
+  // 4. Ejecuta caso de uso con entidad de dominio
+  const result = await createTransferUseCase.execute(transfer);
+  
+  // 5. Mapper convierte Domain Entity → DTO de respuesta
+  const responseDto = TransferMapper.toDto(result);
+  
+  // 6. Retorna DTO al cliente
+  return responseDto;
+}</code></pre>
+      </div>
+
+      <div class="success">
+        <strong>✓ Ventajas de esta estructura:</strong>
+        <ul>
+          <li>
+            <strong>Claridad:</strong> Es evidente qué es dominio, qué son
+            puertos y qué son adaptadores
+          </li>
+          <li>
+            <strong>Testabilidad:</strong> El dominio se testea sin dependencias
+            externas
+          </li>
+          <li>
+            <strong>Mantenibilidad:</strong> Cambios en infraestructura no
+            afectan dominio
+          </li>
+          <li>
+            <strong>Onboarding:</strong> Nuevos desarrolladores entienden la
+            estructura rápidamente
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>2.11 Consideraciones de Diseño</h2>
 
     <div class="section">
       <div class="success">
         <strong>✓ Decisiones Clave Validadas:</strong>
         <ul>
-          <li>GraphQL como protocolo principal reduce latencia 60-70%</li>
-          <li>Microservicios permiten escalabilidad independiente</li>
-          <li>Kafka garantiza comunicación asíncrona confiable</li>
-          <li>CQRS optimiza lecturas sin impactar escrituras</li>
-          <li>Patrón SAGA permite transacciones distribuidas</li>
+          <li>
+            <strong>DDD + Hexagonal:</strong> Dominio en el centro, tecnología
+            en la periferia
+          </li>
+          <li>
+            <strong>Bounded Contexts independientes:</strong> Cada contexto
+            evoluciona sin afectar otros
+          </li>
+          <li>
+            <strong>GraphQL como protocolo principal</strong> reduce latencia
+            60-70%
+          </li>
+          <li>
+            <strong>Kafka para Domain Events</strong> permite comunicación
+            asíncrona entre contextos
+          </li>
+          <li>
+            <strong>CQRS optimiza lecturas</strong> sin impactar escrituras
+          </li>
+          <li>
+            <strong>Patrón SAGA</strong> permite transacciones distribuidas con
+            compensación
+          </li>
+          <li>
+            <strong>Database per Service</strong> garantiza independencia total
+            de cada contexto
+          </li>
         </ul>
       </div>
 
       <div class="note">
-        <strong>Nota Importante:</strong> Esta arquitectura está diseñada para
+        <strong>Nota Importante sobre DDD:</strong> Esta arquitectura no es solo
+        sobre tecnología, es sobre modelar el dominio de negocio correctamente.
+        El código refleja exactamente cómo funciona el negocio bancario, usando
+        el mismo lenguaje que los expertos del dominio. Los cambios en el
+        negocio se traducen directamente a cambios en el código del dominio, sin
+        necesidad de tocar infraestructura.
+      </div>
+
+      <div class="note">
+        <strong>Escalabilidad:</strong> Esta arquitectura está diseñada para
         crecer de 50,000 usuarios iniciales hasta 10M+ usuarios sin necesidad de
         re-arquitectura, solo agregando más nodos horizontalmente.
       </div>
@@ -486,5 +1195,8 @@ Usuario recibe datos optimizados
     <div class="footer">
       <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 2 de 17</p>
     </div>
+    <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>

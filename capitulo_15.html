@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capítulo 15 - Consideraciones Adicionales</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="nav-header">
+      <h2>Capítulo 15: Consideraciones Adicionales</h2>
+      <div class="nav-buttons">
+        <a href="capitulo_14.html" class="nav-btn">← Anterior</a>
+        <a href="index.html" class="nav-btn">Índice</a>
+        <a href="capitulo_16.html" class="nav-btn">Siguiente →</a>
+      </div>
+    </div>
+
+    <h1>15. CONSIDERACIONES ADICIONALES</h1>
+
+    <div class="section">
+      <div class="note">
+        <strong>Objetivo del Capítulo:</strong> Este capítulo aborda aspectos
+        complementarios pero críticos para la implementación exitosa del
+        sistema, incluyendo estrategias de testing, documentación, migración,
+        gestión de equipos y métricas de éxito.
+      </div>
+    </div>
+
+    <h2>15.1 Estrategia de Testing</h2>
+
+    <div class="section">
+      <h3>15.1.1 Pirámide de Testing</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Distribución de Tests por Nivel</div>
+        <pre class="mermaid">
+graph TB
+    subgraph "PIRÁMIDE DE TESTING"
+        E2E[E2E Tests - 10%<br/>Cypress/Playwright<br/>Flujos completos]
+        INT[Integration Tests - 20%<br/>Jest + Supertest<br/>APIs + Servicios]
+        UNIT[Unit Tests - 70%<br/>Jest + Mocha<br/>Lógica de negocio]
+    end
+    
+    E2E --> INT
+    INT --> UNIT
+    
+    style E2E fill:#f44336,stroke:#333,color:#fff
+    style INT fill:#ff9800,stroke:#333,color:#fff
+    style UNIT fill:#4caf50,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo de Test</th>
+            <th>Cobertura Objetivo</th>
+            <th>Herramientas</th>
+            <th>Velocidad</th>
+            <th>Costo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Unit Tests</strong></td>
+            <td>&gt; 80%</td>
+            <td>Jest, Mocha, Chai</td>
+            <td>Muy rápido (&lt; 5 min)</td>
+            <td class="pros">Bajo</td>
+          </tr>
+          <tr>
+            <td><strong>Integration Tests</strong></td>
+            <td>&gt; 60%</td>
+            <td>Jest + Supertest, Testcontainers</td>
+            <td>Medio (10-15 min)</td>
+            <td>Medio</td>
+          </tr>
+          <tr>
+            <td><strong>E2E Tests</strong></td>
+            <td>Flujos críticos</td>
+            <td>Cypress, Playwright, Selenium</td>
+            <td>Lento (20-30 min)</td>
+            <td class="cons">Alto</td>
+          </tr>
+          <tr>
+            <td><strong>Load Tests</strong></td>
+            <td>SLA targets</td>
+            <td>k6, JMeter, Artillery</td>
+            <td>Muy lento (1-2h)</td>
+            <td class="cons">Alto</td>
+          </tr>
+          <tr>
+            <td><strong>Security Tests</strong></td>
+            <td>OWASP Top 10</td>
+            <td>OWASP ZAP, Burp Suite, Snyk</td>
+            <td>Medio (15-20 min)</td>
+            <td>Medio</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>15.1.2 Estrategia de Testing por Microservicio</h3>
+
+      <h4>Unit Testing (70% del esfuerzo)</h4>
+      <pre>
+// Ejemplo: Test de lógica de negocio
+describe('TransferService', () => {
+  describe('validateTransfer', () => {
+    it('debe rechazar transferencia si saldo insuficiente', async () => {
+      const account = { balance: 100 };
+      const transfer = { amount: 200 };
+      
+      await expect(
+        transferService.validateTransfer(account, transfer)
+      ).rejects.toThrow('Saldo insuficiente');
+    });
+    
+    it('debe validar límite diario', async () => {
+      const account = { dailyLimit: 5000, todayTotal: 4500 };
+      const transfer = { amount: 600 };
+      
+      await expect(
+        transferService.validateTransfer(account, transfer)
+      ).rejects.toThrow('Límite diario excedido');
+    });
+  });
+});
+    </pre
+      >
+
+      <h4>Integration Testing (20% del esfuerzo)</h4>
+      <pre>
+// Ejemplo: Test de API endpoints
+describe('POST /api/transfers', () => {
+  it('debe crear transferencia exitosa', async () => {
+    const response = await request(app)
+      .post('/api/transfers')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        fromAccount: '1234567890',
+        toAccount: '0987654321',
+        amount: 1000
+      });
+      
+    expect(response.status).toBe(201);
+    expect(response.body.status).toBe('PENDING');
+    expect(response.body.transactionId).toBeDefined();
+  });
+});
+    </pre
+      >
+
+      <h4>E2E Testing (10% del esfuerzo)</h4>
+      <pre>
+// Ejemplo: Flujo completo con Cypress
+describe('Flujo de Transferencia Completo', () => {
+  it('usuario debe poder realizar transferencia exitosa', () => {
+    cy.visit('/login');
+    cy.get('[data-cy=email]').type('user@example.com');
+    cy.get('[data-cy=password]').type('password123');
+    cy.get('[data-cy=login-btn]').click();
+    
+    cy.url().should('include', '/dashboard');
+    cy.get('[data-cy=transfer-btn]').click();
+    
+    cy.get('[data-cy=amount]').type('1000');
+    cy.get('[data-cy=destination]').type('0987654321');
+    cy.get('[data-cy=submit-transfer]').click();
+    
+    cy.contains('Transferencia exitosa').should('be.visible');
+  });
+});
+    </pre
+      >
+    </div>
+
+    <h2>15.2 Estrategia de Documentación</h2>
+
+    <div class="section">
+      <h3>15.2.1 Documentación Técnica Requerida</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Tipos de Documentación</div>
+        <pre class="mermaid">
+graph LR
+    subgraph "DOCUMENTACIÓN TÉCNICA"
+        ADR[Architecture&nbsp;Decision&nbsp;Records]
+        API[API Documentation]
+        RUN[Runbooks Operacionales]
+        SEC[Security Documentation]
+    end
+    
+    subgraph "DOCUMENTACIÓN USUARIO"
+        USER[Manuales de Usuario]
+        FAQ[FAQs]
+        TRAIN[Material de Capacitación]
+    end
+    
+    subgraph "HERRAMIENTAS"
+        SWAGGER[Swagger/OpenAPI/Apollo]
+        NOTION[Notion/Confluence]
+        GITHUB[GitHub Wiki]
+        VIDEOS[Videos/Tutoriales]
+    end
+    
+    ADR --> NOTION
+    API --> SWAGGER
+    RUN --> GITHUB
+    SEC --> NOTION
+    USER --> VIDEOS
+    FAQ --> NOTION
+    TRAIN --> VIDEOS
+    
+    style ADR fill:#667eea,stroke:#333,color:#fff
+    style API fill:#667eea,stroke:#333,color:#fff
+    style SWAGGER fill:#4caf50,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo de Documento</th>
+            <th>Audiencia</th>
+            <th>Contenido Principal</th>
+            <th>Frecuencia Actualización</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Architecture Decision Records (ADR)</strong></td>
+            <td>Arquitectos, Developers</td>
+            <td>Decisiones arquitectónicas, justificación, alternativas</td>
+            <td>Por decisión importante</td>
+          </tr>
+          <tr>
+            <td><strong>API Documentation</strong></td>
+            <td>Developers, QA</td>
+            <td>Endpoints, schemas, ejemplos, códigos de error</td>
+            <td>Por cada cambio en API</td>
+          </tr>
+          <tr>
+            <td><strong>Runbooks Operacionales</strong></td>
+            <td>DevOps, SRE</td>
+            <td>Procedimientos de deploy, troubleshooting, DR</td>
+            <td>Mensual</td>
+          </tr>
+          <tr>
+            <td><strong>Security Documentation</strong></td>
+            <td>Security Team, Compliance</td>
+            <td>Threat model, policies, incident response</td>
+            <td>Trimestral</td>
+          </tr>
+          <tr>
+            <td><strong>Manuales de Usuario</strong></td>
+            <td>Usuarios finales</td>
+            <td>Guías paso a paso, capturas de pantalla</td>
+            <td>Por feature release</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>15.2.2 Ejemplo de Architecture Decision Record (ADR)</h3>
+
+      <pre>
+# ADR-001: Uso de PostgreSQL para Base de Datos Transaccional
+
+**Estado:** Aceptado
+**Fecha:** 2025-10-01
+**Decisores:** Equipo de Arquitectura
+
+## Contexto
+Necesitamos seleccionar una base de datos para operaciones transaccionales
+que garantice ACID y soporte alto volumen de transacciones.
+
+## Decisión
+Utilizaremos PostgreSQL 15+ como base de datos transaccional principal.
+
+## Alternativas Consideradas
+1. MySQL 8.0
+2. Oracle Database
+3. MongoDB (descartado: no garantiza ACID completo)
+
+## Justificación
+- ✓ ACID completo con isolation levels configurables
+- ✓ Performance probado en entornos bancarios
+- ✓ Soporte para JSONB (flexibilidad)
+- ✓ Open source con comunidad activa
+- ✓ Capacidades de replicación streaming
+- ✓ Cost-effective vs Oracle
+
+## Consecuencias
+- Positivas:
+  * Transacciones garantizadas
+  * Ecosistema maduro de herramientas
+  * Expertise disponible en el mercado
+  
+- Negativas:
+  * Requiere tuning para alto throughput
+  * Vertical scaling limitado (necesita sharding para >100K TPS)
+
+## Mitigación de Riesgos
+- Implementar connection pooling con PgBouncer
+- Configurar read replicas para balanceo de lectura
+- Monitoring con pg_stat_statements
+    </pre
+      >
+    </div>
+
+    <h2>15.3 Estrategia de Migración</h2>
+
+    <div class="section">
+      <h3>15.3.1 Plan de Migración desde Sistema Legacy</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">
+          Roadmap de Migración (Enfoque Strangler Fig)
+        </div>
+        <pre class="mermaid">
+gantt
+    title Plan de Migración a Microservicios (6 meses)
+    dateFormat YYYY-MM-DD
+    
+    section Fase 1: Preparación
+    Análisis de sistema legacy         :2025-11-01, 15d
+    Setup infraestructura K8s          :2025-11-10, 20d
+    Implementar API Gateway            :2025-11-20, 10d
+    
+    section Fase 2: Módulos No Críticos
+    Migrar MS-Notificaciones           :2025-12-01, 15d
+    Migrar MS-Auditoría                :2025-12-10, 15d
+    Testing y validación               :2025-12-20, 10d
+    
+    section Fase 3: Módulos Críticos
+    Migrar MS-Autenticación            :2026-01-05, 20d
+    Migrar MS-Datos-Cliente            :2026-01-20, 20d
+    Testing intensivo                  :2026-02-05, 10d
+    
+    section Fase 4: Core Bancario
+    Migrar MS-Pagos                    :2026-02-15, 25d
+    Migrar MS-Transferencias           :2026-03-10, 25d
+    Testing de integración completo    :2026-04-01, 15d
+    
+    section Fase 5: Go Live
+    Piloto con usuarios beta           :2026-04-15, 10d
+    Rollout gradual                    :2026-04-25, 15d
+    Decomisión sistema legacy          :2026-05-10, 10d
+        </pre>
+      </div>
+
+      <div class="warning">
+        <h4>⚠️ Estrategia Strangler Fig Pattern</h4>
+        <p>El patrón Strangler Fig permite migrar gradualmente sin Big Bang:</p>
+        <ol>
+          <li>
+            <strong>Fase de Coexistencia:</strong> Nuevo sistema y legacy
+            funcionan en paralelo
+          </li>
+          <li>
+            <strong>Migración Incremental:</strong> Se migra funcionalidad
+            módulo por módulo
+          </li>
+          <li>
+            <strong>Routing Inteligente:</strong> API Gateway enruta a nuevo
+            sistema o legacy según disponibilidad
+          </li>
+          <li>
+            <strong>Validación Continua:</strong> Shadow testing para comparar
+            respuestas
+          </li>
+          <li>
+            <strong>Rollback Seguro:</strong> Posibilidad de volver atrás si hay
+            problemas
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>15.3.2 Checklist de Migración por Módulo</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Actividad</th>
+            <th>Responsable</th>
+            <th>Criterio de Éxito</th>
+            <th>Rollback Plan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Análisis de dependencias</strong></td>
+            <td>Arquitecto</td>
+            <td>Diagrama de dependencias completo</td>
+            <td>N/A</td>
+          </tr>
+          <tr>
+            <td><strong>Desarrollo del microservicio</strong></td>
+            <td>Dev Team</td>
+            <td>Unit tests &gt; 80%, Code review aprobado</td>
+            <td>N/A</td>
+          </tr>
+          <tr>
+            <td><strong>Migración de datos</strong></td>
+            <td>DBA + DevOps</td>
+            <td>Data validation 100% match</td>
+            <td>Restore desde backup</td>
+          </tr>
+          <tr>
+            <td><strong>Dual-run (shadow mode)</strong></td>
+            <td>DevOps</td>
+            <td>7 días sin discrepancias</td>
+            <td>Desactivar routing a nuevo sistema</td>
+          </tr>
+          <tr>
+            <td><strong>Traffic cutover</strong></td>
+            <td>DevOps Lead</td>
+            <td>Error rate &lt; 0.1%, latency &lt; SLA</td>
+            <td>Switch DNS back to legacy</td>
+          </tr>
+          <tr>
+            <td><strong>Monitoring post-cutover</strong></td>
+            <td>SRE</td>
+            <td>48h sin incidentes críticos</td>
+            <td>Emergency rollback script</td>
+          </tr>
+          <tr>
+            <td><strong>Decomisión de legacy</strong></td>
+            <td>DevOps + DBA</td>
+            <td>30 días post-cutover exitoso</td>
+            <td>N/A</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>15.4 Estructura de Equipos y Roles</h2>
+
+    <div class="section">
+      <h3>15.4.1 Organización de Equipos por Microservicio</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">
+          Estructura de Equipos (Modelo de 2-Pizza Teams)
+        </div>
+        <pre class="mermaid">
+graph TB
+    subgraph "LIDERAZGO"
+        CTO[CTO]
+        ARCH[Arquitecto Principal]
+        PM[Product Manager]
+    end
+    
+    subgraph "TEAM 1: Pagos & Transferencias"
+        TL1[Tech Lead]
+        DEV1A[Developer Backend]
+        DEV1B[Developer Backend]
+        QA1[QA Engineer]
+    end
+    
+    subgraph "TEAM 2: Autenticación & Cliente"
+        TL2[Tech Lead]
+        DEV2A[Developer Backend]
+        DEV2B[Developer Frontend]
+        QA2[QA Engineer]
+    end
+    
+    subgraph "TEAM 3: Notificaciones & Auditoría"
+        TL3[Tech Lead]
+        DEV3A[Developer Backend]
+        DEV3B[Developer Backend]
+        QA3[QA Engineer]
+    end
+    
+    subgraph "EQUIPO TRANSVERSAL: Platform"
+        DEVOPS[DevOps Lead]
+        SRE1[SRE Engineer]
+        SRE2[SRE Engineer]
+        SEC[Security Engineer]
+    end
+    
+    CTO --> ARCH
+    CTO --> PM
+    ARCH --> TL1
+    ARCH --> TL2
+    ARCH --> TL3
+    ARCH --> DEVOPS
+    
+    PM --> TL1
+    PM --> TL2
+    PM --> TL3
+    
+    TL1 --> DEV1A
+    TL1 --> DEV1B
+    TL1 --> QA1
+    
+    TL2 --> DEV2A
+    TL2 --> DEV2B
+    TL2 --> QA2
+    
+    TL3 --> DEV3A
+    TL3 --> DEV3B
+    TL3 --> QA3
+    
+    DEVOPS --> SRE1
+    DEVOPS --> SRE2
+    DEVOPS --> SEC
+    
+    style CTO fill:#667eea,stroke:#333,color:#fff
+    style ARCH fill:#764ba2,stroke:#333,color:#fff
+    style DEVOPS fill:#ff9800,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Rol</th>
+            <th>Responsabilidades</th>
+            <th>Skills Clave</th>
+            <th>FTE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Tech Lead</strong></td>
+            <td>Diseño técnico, code reviews, mentoring</td>
+            <td>Node.js, Microservicios, Kubernetes</td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td><strong>Backend Developer</strong></td>
+            <td>Desarrollo de microservicios, APIs</td>
+            <td>Node.js, GraphQL, PostgreSQL, Kafka</td>
+            <td>6</td>
+          </tr>
+          <tr>
+            <td><strong>Frontend Developer</strong></td>
+            <td>Desarrollo de UI, integración con APIs</td>
+            <td>React, TypeScript, Apollo Client</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td><strong>QA Engineer</strong></td>
+            <td>Testing automatizado, validación de calidad</td>
+            <td>Jest, Cypress, k6, Postman</td>
+            <td>3</td>
+          </tr>
+          <tr>
+            <td><strong>DevOps Lead</strong></td>
+            <td>CI/CD, infraestructura, automatización</td>
+            <td>Kubernetes, Terraform, ArgoCD, AWS</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td><strong>SRE Engineer</strong></td>
+            <td>Monitoring, alerting, incident response</td>
+            <td>Prometheus, Grafana, ELK, On-call</td>
+            <td>2</td>
+          </tr>
+          <tr>
+            <td><strong>Security Engineer</strong></td>
+            <td>Security audits, vulnerability management</td>
+            <td>OWASP, Penetration testing, Compliance</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td><strong>Arquitecto Principal</strong></td>
+            <td>Decisiones arquitectónicas, ADRs, mentoring</td>
+            <td>Arquitectura distribuida, Cloud, Patrones</td>
+            <td>1</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>Total FTE Requerido:</strong> 18 personas<br />
+        <strong>Modelo de trabajo:</strong> Equipos autónomos tipo "2-Pizza
+        Team" (6 personas máximo)<br />
+        <strong>Metodología:</strong> Scrum/Kanban con sprints de 2 semanas
+      </div>
+    </div>
+
+    <h2>15.5 Métricas de Éxito y KPIs</h2>
+
+    <div class="section">
+      <h3>15.5.1 Métricas Técnicas</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th>Métrica</th>
+            <th>Objetivo</th>
+            <th>Herramienta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td rowspan="4"><strong>Performance</strong></td>
+            <td>Response Time (P95)</td>
+            <td>&lt; 200ms</td>
+            <td>Prometheus + Grafana</td>
+          </tr>
+          <tr>
+            <td>Throughput</td>
+            <td>&gt; 1000 req/s</td>
+            <td>Prometheus</td>
+          </tr>
+          <tr>
+            <td>Error Rate</td>
+            <td>&lt; 0.1%</td>
+            <td>Prometheus + AlertManager</td>
+          </tr>
+          <tr>
+            <td>Latency (P99)</td>
+            <td>&lt; 500ms</td>
+            <td>Jaeger</td>
+          </tr>
+          <tr>
+            <td rowspan="3"><strong>Disponibilidad</strong></td>
+            <td>Uptime</td>
+            <td>&gt; 99.9%</td>
+            <td>Pingdom, UptimeRobot</td>
+          </tr>
+          <tr>
+            <td>MTTR (Mean Time To Recovery)</td>
+            <td>&lt; 15 min</td>
+            <td>PagerDuty</td>
+          </tr>
+          <tr>
+            <td>MTBF (Mean Time Between Failures)</td>
+            <td>&gt; 720 horas</td>
+            <td>Incident logs</td>
+          </tr>
+          <tr>
+            <td rowspan="3"><strong>Calidad de Código</strong></td>
+            <td>Code Coverage</td>
+            <td>&gt; 80%</td>
+            <td>Jest, SonarQube</td>
+          </tr>
+          <tr>
+            <td>Code Smells</td>
+            <td>&lt; 50</td>
+            <td>SonarQube</td>
+          </tr>
+          <tr>
+            <td>Technical Debt Ratio</td>
+            <td>&lt; 5%</td>
+            <td>SonarQube</td>
+          </tr>
+          <tr>
+            <td rowspan="2"><strong>Seguridad</strong></td>
+            <td>Vulnerabilities (Critical/High)</td>
+            <td>0</td>
+            <td>Snyk, Trivy</td>
+          </tr>
+          <tr>
+            <td>Security Incidents</td>
+            <td>0</td>
+            <td>Security logs</td>
+          </tr>
+          <tr>
+            <td rowspan="2"><strong>DevOps</strong></td>
+            <td>Deployment Frequency</td>
+            <td>&gt; 10/semana</td>
+            <td>CI/CD logs</td>
+          </tr>
+          <tr>
+            <td>Lead Time for Changes</td>
+            <td>&lt; 2 horas</td>
+            <td>GitHub/GitLab</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>15.5.2 Métricas de Negocio</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            <th>Descripción</th>
+            <th>Objetivo</th>
+            <th>Frecuencia</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Daily Active Users (DAU)</strong></td>
+            <td>Usuarios únicos por día</td>
+            <td>&gt; 50,000</td>
+            <td>Diaria</td>
+          </tr>
+          <tr>
+            <td><strong>Transaction Success Rate</strong></td>
+            <td>% de transacciones exitosas</td>
+            <td>&gt; 99.5%</td>
+            <td>Tiempo real</td>
+          </tr>
+          <tr>
+            <td><strong>Customer Satisfaction (CSAT)</strong></td>
+            <td>Encuesta de satisfacción post-transacción</td>
+            <td>&gt; 4.5/5</td>
+            <td>Mensual</td>
+          </tr>
+          <tr>
+            <td><strong>Net Promoter Score (NPS)</strong></td>
+            <td>Probabilidad de recomendar el servicio</td>
+            <td>&gt; 50</td>
+            <td>Trimestral</td>
+          </tr>
+          <tr>
+            <td><strong>Time to Complete Transaction</strong></td>
+            <td>Tiempo promedio de una transferencia</td>
+            <td>&lt; 30 segundos</td>
+            <td>Semanal</td>
+          </tr>
+          <tr>
+            <td><strong>Cost per Transaction</strong></td>
+            <td>Costo operacional por transacción</td>
+            <td>&lt; $0.05</td>
+            <td>Mensual</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>15.6 Plan de Capacitación</h2>
+
+    <div class="section">
+      <h3>15.6.1 Programa de Onboarding</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Roadmap de Capacitación (4 semanas)</div>
+        <pre class="mermaid">
+gantt
+    title Plan de Capacitación para Nuevos Developers
+    dateFormat YYYY-MM-DD
+    
+    section Semana 1: Fundamentos
+    Introducción a la arquitectura     :2025-11-01, 2d
+    Setup de ambiente local            :2025-11-03, 1d
+    Workshop: GraphQL & Apollo         :2025-11-04, 2d
+    
+    section Semana 2: Microservicios
+    Workshop: Node.js & Express        :2025-11-08, 2d
+    Workshop: Docker & Kubernetes      :2025-11-10, 3d
+    
+    section Semana 3: Prácticas
+    Workshop: Testing (Jest/Cypress)   :2025-11-15, 2d
+    Workshop: CI/CD & GitOps           :2025-11-17, 2d
+    Pair programming con senior        :2025-11-19, 1d
+    
+    section Semana 4: Proyecto
+    Desarrollo de microservicio demo   :2025-11-22, 5d
+    Code review y feedback             :2025-11-27, 1d
+        </pre>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Módulo</th>
+            <th>Contenido</th>
+            <th>Duración</th>
+            <th>Formato</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Arquitectura del Sistema</strong></td>
+            <td>Visión general, decisiones arquitectónicas, ADRs</td>
+            <td>2 días</td>
+            <td>Presencial + Documentación</td>
+          </tr>
+          <tr>
+            <td><strong>GraphQL & Apollo</strong></td>
+            <td>Schemas, resolvers, federation, subscriptions</td>
+            <td>2 días</td>
+            <td>Workshop hands-on</td>
+          </tr>
+          <tr>
+            <td><strong>Node.js & Express</strong></td>
+            <td>REST APIs, middleware, error handling</td>
+            <td>2 días</td>
+            <td>Workshop hands-on</td>
+          </tr>
+          <tr>
+            <td><strong>Docker & Kubernetes</strong></td>
+            <td>Containerización, deployments, services, ingress</td>
+            <td>3 días</td>
+            <td>Workshop + Lab exercises</td>
+          </tr>
+          <tr>
+            <td><strong>Testing Strategies</strong></td>
+            <td>Unit, integration, E2E testing</td>
+            <td>2 días</td>
+            <td>Workshop hands-on</td>
+          </tr>
+          <tr>
+            <td><strong>CI/CD & GitOps</strong></td>
+            <td>GitHub Actions, ArgoCD, deployment strategies</td>
+            <td>2 días</td>
+            <td>Workshop + Demo</td>
+          </tr>
+          <tr>
+            <td><strong>Security Best Practices</strong></td>
+            <td>OWASP Top 10, secure coding, secrets management</td>
+            <td>1 día</td>
+            <td>Presentación + Casos</td>
+          </tr>
+          <tr>
+            <td><strong>Monitoring & Observability</strong></td>
+            <td>Prometheus, Grafana, Jaeger, logs</td>
+            <td>1 día</td>
+            <td>Workshop + Dashboard creation</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>15.7 Gestión de Cambios y Comunicación</h2>
+
+    <div class="section">
+      <h3>15.7.1 Proceso de Gestión de Cambios</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Flujo de Aprobación de Cambios</div>
+        <pre class="mermaid">
+graph TB
+    START[Solicitud de Cambio] --> ASSESS[Evaluación de Impacto]
+    ASSESS --> RISK{Nivel de Riesgo}
+    
+    RISK -->|Bajo| AUTO[Aprobación Automática]
+    RISK -->|Medio| CAB[Change Advisory Board]
+    RISK -->|Alto| EXEC[Comité Ejecutivo]
+    
+    AUTO --> PLAN[Plan de Implementación]
+    CAB --> APPROVE1{Aprobado?}
+    EXEC --> APPROVE2{Aprobado?}
+    
+    APPROVE1 -->|Sí| PLAN
+    APPROVE1 -->|No| REJECT[Rechazado]
+    APPROVE2 -->|Sí| PLAN
+    APPROVE2 -->|No| REJECT
+    
+    PLAN --> SCHEDULE[Programar Cambio]
+    SCHEDULE --> IMPLEMENT[Implementar]
+    IMPLEMENT --> VERIFY[Verificar]
+    VERIFY --> SUCCESS{Exitoso?}
+    
+    SUCCESS -->|Sí| CLOSE[Cerrar Cambio]
+    SUCCESS -->|No| ROLLBACK[Rollback]
+    ROLLBACK --> REVIEW[Post-Mortem]
+    
+    style START fill:#667eea,stroke:#333,color:#fff
+    style AUTO fill:#4caf50,stroke:#333,color:#fff
+    style CAB fill:#ff9800,stroke:#333,color:#fff
+    style EXEC fill:#f44336,stroke:#333,color:#fff
+    style ROLLBACK fill:#f44336,stroke:#333,color:#fff
+    style CLOSE fill:#4caf50,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Nivel de Riesgo</th>
+            <th>Ejemplos</th>
+            <th>Aprobador</th>
+            <th>Ventana de Cambio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Bajo</strong></td>
+            <td>Fix de bugs menores, actualizaciones de contenido</td>
+            <td>Tech Lead</td>
+            <td>Cualquier horario</td>
+          </tr>
+          <tr>
+            <td><strong>Medio</strong></td>
+            <td>Nuevas features, cambios en APIs</td>
+            <td>CAB (Change Advisory Board)</td>
+            <td>Horario de baja demanda</td>
+          </tr>
+          <tr>
+            <td><strong>Alto</strong></td>
+            <td>
+              Cambios en DB schema, migraciones, actualizaciones de
+              infraestructura
+            </td>
+            <td>Comité Ejecutivo</td>
+            <td>Ventana de mantenimiento (2-6 AM)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>15.7.2 Plan de Comunicación de Cambios</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Stakeholder</th>
+            <th>Tipo de Comunicación</th>
+            <th>Frecuencia</th>
+            <th>Canal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Equipo de Desarrollo</strong></td>
+            <td>Daily standups, sprint planning</td>
+            <td>Diaria / Quincenal</td>
+            <td>Slack, Jira</td>
+          </tr>
+          <tr>
+            <td><strong>Líderes Técnicos</strong></td>
+            <td>Tech sync, architectural reviews</td>
+            <td>Semanal</td>
+            <td>Zoom, Confluence</td>
+          </tr>
+          <tr>
+            <td><strong>Product Owners</strong></td>
+            <td>Sprint reviews, roadmap updates</td>
+            <td>Quincenal</td>
+            <td>Zoom, Notion</td>
+          </tr>
+          <tr>
+            <td><strong>Ejecutivos</strong></td>
+            <td>Status reports, KPI dashboards</td>
+            <td>Mensual</td>
+            <td>Email, PowerPoint</td>
+          </tr>
+          <tr>
+            <td><strong>Usuarios Finales</strong></td>
+            <td>Release notes, maintenance notices</td>
+            <td>Por release</td>
+            <td>Email, In-app notifications</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>15.8 Consideraciones de Performance</h2>
+
+    <div class="section">
+      <h3>15.8.1 Estrategias de Optimización</h3>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Área</th>
+            <th>Estrategia</th>
+            <th>Impacto Esperado</th>
+            <th>Complejidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Base de Datos</strong></td>
+            <td>Connection pooling (PgBouncer), índices optimizados</td>
+            <td class="pros">Alto (40% mejora)</td>
+            <td>Media</td>
+          </tr>
+          <tr>
+            <td><strong>Caché</strong></td>
+            <td>Redis para datos frecuentes, TTL optimizado</td>
+            <td class="pros">Muy Alto (70% reducción latencia)</td>
+            <td>Baja</td>
+          </tr>
+          <tr>
+            <td><strong>GraphQL</strong></td>
+            <td>DataLoader para batching, query complexity limits</td>
+            <td>Medio (30% mejora)</td>
+            <td>Media</td>
+          </tr>
+          <tr>
+            <td><strong>APIs</strong></td>
+            <td>Compression (gzip), response pagination</td>
+            <td>Medio (25% reducción payload)</td>
+            <td>Baja</td>
+          </tr>
+          <tr>
+            <td><strong>Kubernetes</strong></td>
+            <td>HPA (Horizontal Pod Autoscaler), resource limits</td>
+            <td class="pros">Alto (elasticidad automática)</td>
+            <td>Media</td>
+          </tr>
+          <tr>
+            <td><strong>CDN</strong></td>
+            <td>CloudFront para assets estáticos</td>
+            <td class="pros">Muy Alto (80% reducción latencia)</td>
+            <td>Baja</td>
+          </tr>
+          <tr>
+            <td><strong>Código</strong></td>
+            <td>Async/await optimization, memory profiling</td>
+            <td>Medio (20% mejora)</td>
+            <td>Alta</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h3>15.8.2 Benchmarks de Performance</h3>
+
+      <div class="note">
+        <h4>📊 Resultados de Load Testing con k6</h4>
+        <pre>
+        Escenario: 1000 usuarios concurrentes, 10 min de duración
+
+        ✓ http_req_duration..............: avg=156ms  min=45ms  med=142ms  max=890ms  p(95)=287ms
+        ✓ http_req_failed................: 0.08%
+        ✓ http_reqs......................: 124,567 (207.6/s)
+        ✓ iterations.....................: 124,567 (207.6/s)
+        ✓ vus............................: 1000
+
+        PASS: Todos los SLAs cumplidos
+        - P95 latency: 287ms (objetivo: < 500ms) ✓
+        - Error rate: 0.08% (objetivo: < 0.1%) ✓
+        - Throughput: 207.6 req/s (objetivo: > 100 req/s) ✓
+        </pre>
+      </div>
+    </div>
+
+    <h2>15.9 Gestión de Incidentes</h2>
+
+    <div class="section">
+      <h3>15.9.1 Proceso de Incident Response</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Flujo de Gestión de Incidentes</div>
+        <pre class="mermaid">
+graph TB
+    DETECT[Detección<br/>Alertas/Monitoring] --> TRIAGE[Triage<br/>Severity Assessment]
+    TRIAGE --> SEV{Severidad}
+    
+    SEV -->|SEV1: Crítico| ON_CALL[Notificar On-Call<br/>Inmediato]
+    SEV -->|SEV2: Alto| ASSIGN[Asignar a Team Lead<br/>15 min]
+    SEV -->|SEV3: Medio| TICKET[Crear Ticket<br/>Next business day]
+    
+    ON_CALL --> WAR_ROOM[War Room<br/>Todos los stakeholders]
+    ASSIGN --> INVESTIGATE[Investigación]
+    TICKET --> BACKLOG[Backlog]
+    
+    WAR_ROOM --> MITIGATE[Mitigar Impacto]
+    INVESTIGATE --> MITIGATE
+    
+    MITIGATE --> FIX[Implementar Fix]
+    FIX --> VERIFY[Verificar Resolución]
+    VERIFY --> RESOLVED{Resuelto?}
+    
+    RESOLVED -->|No| ESCALATE[Escalar]
+    RESOLVED -->|Sí| POSTMORTEM[Post-Mortem]
+    ESCALATE --> WAR_ROOM
+    
+    POSTMORTEM --> DOCUMENT[Documentar Lecciones]
+    DOCUMENT --> PREVENT[Action Items<br/>Prevención]
+    
+    style DETECT fill:#667eea,stroke:#333,color:#fff
+    style ON_CALL fill:#f44336,stroke:#333,color:#fff
+    style WAR_ROOM fill:#ff9800,stroke:#333,color:#fff
+    style POSTMORTEM fill:#4caf50,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Severidad</th>
+            <th>Definición</th>
+            <th>Tiempo de Respuesta</th>
+            <th>Escalamiento</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>SEV1 - Crítico</strong></td>
+            <td>Sistema completamente caído, pérdida de dinero</td>
+            <td>Inmediato (0-5 min)</td>
+            <td>On-call engineer + Manager + CTO</td>
+          </tr>
+          <tr>
+            <td><strong>SEV2 - Alto</strong></td>
+            <td>Funcionalidad crítica afectada, workaround disponible</td>
+            <td>15 minutos</td>
+            <td>On-call engineer + Team Lead</td>
+          </tr>
+          <tr>
+            <td><strong>SEV3 - Medio</strong></td>
+            <td>Funcionalidad no crítica afectada</td>
+            <td>4 horas</td>
+            <td>Team assigned</td>
+          </tr>
+          <tr>
+            <td><strong>SEV4 - Bajo</strong></td>
+            <td>Issues menores, no afecta usuarios</td>
+            <td>Next business day</td>
+            <td>Individual developer</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="success">
+        <h3>✅ Conclusiones del Capítulo 15</h3>
+        <p>Las consideraciones adicionales presentadas garantizan:</p>
+        <ul>
+          <li>
+            <strong>Calidad del código:</strong> Estrategia de testing robusta
+            con cobertura &gt; 80%
+          </li>
+          <li>
+            <strong>Documentación completa:</strong> ADRs, API docs, runbooks
+            operacionales
+          </li>
+          <li>
+            <strong>Migración segura:</strong> Patrón Strangler Fig para
+            transición gradual
+          </li>
+          <li>
+            <strong>Equipos bien estructurados:</strong> 2-Pizza Teams con roles
+            claros
+          </li>
+          <li>
+            <strong>Métricas definidas:</strong> KPIs técnicos y de negocio
+            monitoreados
+          </li>
+          <li>
+            <strong>Capacitación efectiva:</strong> Plan de onboarding de 4
+            semanas
+          </li>
+          <li>
+            <strong>Gestión de cambios:</strong> Proceso claro de aprobación y
+            rollback
+          </li>
+          <li>
+            <strong>Performance optimizado:</strong> Estrategias de caché,
+            índices, autoscaling
+          </li>
+          <li>
+            <strong>Incident response:</strong> Proceso definido con SLAs por
+            severidad
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 15 de 17</p>
+    </div>
+
+    <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

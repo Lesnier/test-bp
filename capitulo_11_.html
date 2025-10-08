@@ -5,24 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Capítulo 11 - Alta Disponibilidad y Resiliencia del Sistema</title>
     <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
-    <script>
-      mermaid.initialize({
-        startOnLoad: true,
-        theme: "base",
-        themeVariables: {
-          primaryColor: "#E8F5E9",
-          primaryTextColor: "#2C3E50",
-          primaryBorderColor: "#4CAF50",
-          lineColor: "#34495E",
-          secondaryColor: "#E3F2FD",
-          tertiaryColor: "#FFF9C4",
-          noteBkgColor: "#FFE5E5",
-          noteBorderColor: "#E74C3C",
-          fontSize: "14px",
-        },
-      });
-    </script>
   </head>
   <body>
     <div class="nav-header">
@@ -121,9 +103,9 @@ graph TB
 
     %% === REPLICA DATABASES ===
     subgraph REPLICAS[🔵 Read Replicas]
-        R1[<b>Replica 1</b><br/> Read-only<br/>📍 AZ-A]
-        R2[<b>Replica 2</b><br/> Read-only<br/>📍 AZ-B]
-        R3[<b>Replica 3</b><br/> Read-only<br/>📍 AZ-C]
+        R1[<b>Replica 1</b><br/>Read-only<br/>📍 AZ-A]
+        R2[<b>Replica 2</b><br/>Read-only<br/>📍 AZ-B]
+        R3[<b>Replica 3</b><br/>Read-only<br/>📍 AZ-C]
     end
 
     %% === FAILOVER MANAGEMENT ===
@@ -152,6 +134,14 @@ graph TB
 
     linkStyle 0,1,2 stroke:#1976D2,stroke-width:2px
     linkStyle 3,4,5,6 stroke:#FF9800,stroke-width:2px,stroke-dasharray:5 5
+
+Failover Automático:
+1. Primary cae
+2. Patroni detecta (5 segundos)
+3. Elige nueva Primary (Replica con menos lag)
+4. Promoción automática (10 segundos)
+5. Actualiza DNS/Endpoints
+6. Total: &lt; 20 segundos de interrupción
         </pre>
       </div>
 
@@ -159,36 +149,20 @@ graph TB
 
       <div class="diagram">
         <div class="diagram-title">Estados del Circuit Breaker</div>
-        <pre class="mermaid">
-stateDiagram-v2
-    [*] --> CLOSED
-    
-    CLOSED --> OPEN : Threshold alcanzado<br/> ej. 50% errors
-    OPEN --> HALF_OPEN : Después de timeout<br/> ej. 30 segundos
-    HALF_OPEN --> CLOSED : Request exitoso
-    HALF_OPEN --> OPEN : Request falla
-    
-    note right of CLOSED
-        <b>Estado Normal (CLOSED)</b>
-        • Request → Servicio ✓
-        • Se monitorean fallos
-        • Funcionalidad completa
-    end note
-    
-    note right of OPEN
-        <b>Estado Abierto (OPEN)</b>
-        • Request → Error inmediato
-        • NO se llama al servicio
-        • Fail-fast pattern
-        • Espera timeout
-    end note
-    
-    note right of HALF_OPEN
-        <b>Estado Semi-Abierto</b>
-        • Intenta 1 request prueba
-        • Si éxito → CLOSED
-        • Si falla → OPEN
-    end note
+        <pre>
+Estado Normal (CLOSED):
+  Request → Servicio ✓
+  └─► Se monitorean fallos
+
+Estado Abierto (OPEN):
+  Request → Circuit Breaker → Error inmediato
+  └─► NO se llama al servicio (fail-fast)
+  └─► Espera 30 segundos → HALF_OPEN
+
+Estado Semi-Abierto (HALF_OPEN):
+  Request → Circuit Breaker → Intenta 1 request de prueba
+  ├─► Si éxito → CLOSED (vuelve a normal)
+  └─► Si falla → OPEN (espera otros 30s)
         </pre>
       </div>
 
@@ -391,41 +365,31 @@ cuando múltiples clientes reintentan simultáneamente
 
       <div class="diagram">
         <div class="diagram-title">Estrategia PITR PostgreSQL</div>
-        <pre class="mermaid">
-flowchart TB
-    subgraph Strategy["<b>POSTGRESQL PITR STRATEGY</b>"]
-        direction TB
-        
-        subgraph Base["<b>Base Backup (Full)</b>"]
-            B1["Domingo 2am"]
-            B2["Stored in S3 Glacier"]
-            B3["Compressed with pg_dump"]
-            B4["Retention: 90 días"]
-        end
-        
-        subgraph WAL["<b>WAL (Write-Ahead Logs)</b>"]
-            W1["Continuo"]
-            W2["Archived every 16MB<br/>or 5 minutes"]
-            W3["Stored in S3 Standard"]
-            W4["Retention: 30 días"]
-            W5["Enable PITR a<br/>cualquier momento"]
-        end
-        
-        subgraph Recovery["<b>Procedimiento de Recuperación</b>"]
-            R1["1. Restaurar Full Backup<br/>más reciente"]
-            R2["2. Aplicar WAL logs<br/>hasta punto deseado"]
-            R3["3. Tiempo recuperación:<br/>15-30 min"]
-            R4["4. Pérdida máxima datos:<br/>5 minutos"]
-        end
-    end
-    
-    Base --> WAL
-    WAL --> Recovery
-    
-    style Strategy fill:#E8F5E9,stroke:#4CAF50,stroke-width:3px,rx:15,ry:15
-    style Base fill:#E3F2FD,stroke:#2196F3,stroke-width:3px,rx:15,ry:15
-    style WAL fill:#FFF9C4,stroke:#FBC02D,stroke-width:3px,rx:15,ry:15
-    style Recovery fill:#FFE5E5,stroke:#E74C3C,stroke-width:3px,rx:15,ry:15
+        <pre>
+┌────────────────────────────────────────────────┐
+│      POSTGRESQL PITR STRATEGY                  │
+├────────────────────────────────────────────────┤
+│                                                │
+│  Base Backup (Full): Domingo 2am               │
+│  │                                             │
+│  ├─► Stored in S3 Glacier                     │
+│  ├─► Compressed with pg_dump                  │
+│  └─► Retention: 90 días                       │
+│                                                │
+│  WAL (Write-Ahead Logs): Continuo             │
+│  │                                             │
+│  ├─► Archived every 16MB or 5 minutes         │
+│  ├─► Stored in S3 Standard                    │
+│  ├─► Retention: 30 días                       │
+│  └─► Enable PITR a cualquier momento          │
+│                                                │
+│  Procedimiento de Recuperación:                │
+│  ├─► 1. Restaurar Full Backup más reciente    │
+│  ├─► 2. Aplicar WAL logs hasta punto deseado  │
+│  ├─► 3. Tiempo de recuperación: 15-30 min     │
+│  └─► 4. Pérdida máxima de datos: 5 minutos    │
+│                                                │
+└────────────────────────────────────────────────┘
         </pre>
       </div>
     </div>
@@ -512,40 +476,24 @@ flowchart TB
 
       <div class="diagram">
         <div class="diagram-title">Tres Pilares de Resiliencia</div>
-        <pre class="mermaid">
-graph TB
-    Main["<b>RESILIENCIA DEL SISTEMA</b>"]
-    
-    subgraph Resistencia["<b>RESISTENCIA</b>"]
-        R1["• Circuit Breaker"]
-        R2["• Bulkhead"]
-        R3["• Retry + Backoff"]
-        R4["• Timeouts"]
-        R5["• Degradation"]
-    end
-    
-    subgraph Adaptacion["<b>ADAPTACIÓN</b>"]
-        A1["• HPA/VPA"]
-        A2["• Queue-based Leveling"]
-        A3["• Adaptive Rate Limit"]
-        A4["• Priority Queues"]
-    end
-    
-    subgraph Recuperacion["<b>RECUPERACIÓN</b>"]
-        Re1["• Self-Healing"]
-        Re2["• Auto Rollback"]
-        Re3["• PITR"]
-        Re4["• Chaos Engineering"]
-    end
-    
-    Main --> Resistencia
-    Main --> Adaptacion
-    Main --> Recuperacion
-    
-    style Main fill:#E8F5E9,stroke:#4CAF50,stroke-width:3px,rx:15,ry:15
-    style Resistencia fill:#E3F2FD,stroke:#2196F3,stroke-width:3px,rx:15,ry:15
-    style Adaptacion fill:#FFF9C4,stroke:#FBC02D,stroke-width:3px,rx:15,ry:15
-    style Recuperacion fill:#FFE5E5,stroke:#E74C3C,stroke-width:3px,rx:15,ry:15
+        <pre>
+┌────────────────────────────────────────────────────────┐
+│              RESILIENCIA DEL SISTEMA                   │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌─────────────┐  │
+│  │ RESISTENCIA  │  │  ADAPTACIÓN  │  │ RECUPERACIÓN│  │
+│  │              │  │              │  │             │  │
+│  │ • Circuit    │  │ • HPA/VPA    │  │ • Self-     │  │
+│  │   Breaker    │  │ • Queue-based│  │   Healing   │  │
+│  │ • Bulkhead   │  │   Leveling   │  │ • Auto      │  │
+│  │ • Retry +    │  │ • Adaptive   │  │   Rollback  │  │
+│  │   Backoff    │  │   Rate Limit │  │ • PITR      │  │
+│  │ • Timeouts   │  │ • Priority   │  │ • Chaos     │  │
+│  │ • Degradation│  │   Queues     │  │   Engineer. │  │
+│  └──────────────┘  └──────────────┘  └─────────────┘  │
+│                                                        │
+└────────────────────────────────────────────────────────┘
         </pre>
       </div>
 
@@ -557,47 +505,34 @@ graph TB
         <div class="diagram-title">
           Aislamiento de Recursos por Tipo de Operación
         </div>
-        <pre class="mermaid">
-graph TB
-    subgraph MSPagos["<b>MS-PAGOS (Ejemplo)</b>"]
-        direction TB
-        
-        subgraph PoolConsultas["<b>Thread Pool CONSULTAS</b>"]
-            TC1["• 20 threads"]
-            TC2["• Timeout: 5s"]
-            TC3["• Queue: 100"]
-        end
-        
-        subgraph PoolTransfer["<b>Thread Pool TRANSFERENCIAS</b>"]
-            TT1["• 10 threads"]
-            TT2["• Timeout: 30s"]
-            TT3["• Queue: 50"]
-        end
-        
-        subgraph ConnRead["<b>Connection Pool READ REPLICA</b>"]
-            CR1["50 connections"]
-        end
-        
-        subgraph ConnPrimary["<b>Connection Pool PRIMARY DB</b>"]
-            CP1["20 connections"]
-        end
-        
-        subgraph PoolNotif["<b>Thread Pool NOTIFICACIONES</b>"]
-            TN1["• 5 threads"]
-            TN2["• No crítico"]
-            TN3["• Puede fallar sin afectar core"]
-        end
-        
-        PoolConsultas --> ConnRead
-        PoolTransfer --> ConnPrimary
-    end
-    
-    style MSPagos fill:#F3E5F5,stroke:#9C27B0,stroke-width:3px,rx:15,ry:15
-    style PoolConsultas fill:#E3F2FD,stroke:#2196F3,stroke-width:3px,rx:15,ry:15
-    style PoolTransfer fill:#FFE5E5,stroke:#E74C3C,stroke-width:3px,rx:15,ry:15
-    style ConnRead fill:#E3F2FD,stroke:#2196F3,stroke-width:2px,rx:10,ry:10
-    style ConnPrimary fill:#FFE5E5,stroke:#E74C3C,stroke-width:2px,rx:10,ry:10
-    style PoolNotif fill:#FFF9C4,stroke:#FBC02D,stroke-width:3px,rx:15,ry:15
+        <pre>
+┌────────────────────────────────────────────────────────┐
+│           MS-PAGOS (Ejemplo)                           │
+├────────────────────────────────────────────────────────┤
+│                                                        │
+│  ┌─────────────────────┐       ┌──────────────────┐   │
+│  │  Thread Pool        │       │  Thread Pool     │   │
+│  │  CONSULTAS          │       │  TRANSFERENCIAS  │   │
+│  │                     │       │                  │   │
+│  │  • 20 threads       │       │  • 10 threads    │   │
+│  │  • Timeout: 5s      │       │  • Timeout: 30s  │   │
+│  │  • Queue: 100       │       │  • Queue: 50     │   │
+│  └──────────┬──────────┘       └─────────┬────────┘   │
+│             │                            │             │
+│             ▼                            ▼             │
+│  ┌─────────────────────┐       ┌──────────────────┐   │
+│  │  Connection Pool    │       │  Connection Pool │   │
+│  │  READ REPLICA       │       │  PRIMARY DB      │   │
+│  │  50 connections     │       │  20 connections  │   │
+│  └─────────────────────┘       └──────────────────┘   │
+│                                                        │
+│  ┌───────────────────────────────────────────────┐    │
+│  │  Thread Pool - NOTIFICACIONES                 │    │
+│  │  • 5 threads                                  │    │
+│  │  • No crítico, puede fallar sin afectar core  │    │
+│  └───────────────────────────────────────────────┘    │
+│                                                        │
+└────────────────────────────────────────────────────────┘
         </pre>
       </div>
 
@@ -613,24 +548,34 @@ graph TB
 
       <div class="diagram">
         <div class="diagram-title">Absorción de Picos con Colas</div>
-        <pre class="mermaid">
-flowchart TD
-    Traffic["<b>Tráfico Variable</b><br/><br/>Peak: 10,000 req/s<br/>Normal: 2,000 req/s"]
-    
-    Queue["<b>KAFKA QUEUE</b><br/><br/>Buffer: 1M msgs<br/>TTL: 10 minutes"]
-    
-    Workers["<b>Workers Pool</b><br/><br/>Process: 3K req/s<br/>Consistent rate"]
-    
-    Benefits["<b>Beneficios</b><br/><br/>• Sistema procesa<br/>a ritmo constante<br/>• Ahorro: 50-60% costos<br/>vs aprovisionar para pico"]
-    
-    Traffic --> Queue
-    Queue -->|Consume at<br/>sustainable rate| Workers
-    Workers --> Benefits
-    
-    style Traffic fill:#FFE5E5,stroke:#E74C3C,stroke-width:3px,rx:15,ry:15
-    style Queue fill:#FFF9C4,stroke:#FBC02D,stroke-width:3px,rx:15,ry:15
-    style Workers fill:#E8F5E9,stroke:#4CAF50,stroke-width:3px,rx:15,ry:15
-    style Benefits fill:#E3F2FD,stroke:#2196F3,stroke-width:3px,rx:15,ry:15
+        <pre>
+Tráfico Variable
+     │
+     │  Peak: 10,000 req/s
+     │  ────────┐
+     │         │ 
+     │  Normal:│ 2,000 req/s
+     │  ───────┼─────────
+     │         │
+     ▼         ▼
+┌────────────────────┐
+│   KAFKA QUEUE      │
+│                    │
+│  Buffer: 1M msgs   │
+│  TTL: 10 minutes   │
+└────────┬───────────┘
+         │ Consume at sustainable rate
+         │
+         ▼
+┌────────────────────┐
+│  Workers Pool      │
+│                    │
+│  Process: 3K req/s │
+│  Consistent rate   │
+└────────────────────┘
+
+Beneficio: Sistema procesa a ritmo constante
+Ahorro: 50-60% en costos vs aprovisionar para pico
         </pre>
       </div>
 
@@ -841,8 +786,5 @@ flowchart TD
     <div class="footer">
       <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 11 de 17</p>
     </div>
-    <script src="mermaid.min.js"></script>
-    <script src="panzoom.min.js"></script>
-    <script src="app.js"></script>
   </body>
 </html>

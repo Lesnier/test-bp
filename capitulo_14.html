@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capítulo 14 - Diagramas de Integración y Flujos</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="nav-header">
+      <h2>Capítulo 14: Diagramas de Integración y Flujos</h2>
+      <div class="nav-buttons">
+        <a href="capitulo_13.html" class="nav-btn">← Anterior</a>
+        <a href="index.html" class="nav-btn">Índice</a>
+        <a href="capitulo_15.html" class="nav-btn">Siguiente →</a>
+      </div>
+    </div>
+
+    <h1>14. DIAGRAMAS DE INTEGRACIÓN Y FLUJOS</h1>
+
+    <div class="section">
+      <div class="note">
+        <strong>Objetivo del Capítulo:</strong> Este capítulo presenta los
+        diagramas detallados de integración entre componentes y los flujos de
+        procesos críticos del sistema bancario BP, proporcionando una visión
+        completa de las interacciones entre microservicios, servicios externos y
+        usuarios.
+      </div>
+    </div>
+
+    <h2>14.1 Arquitectura de Integración General</h2>
+
+    <div class="section">
+      <h3>Vista Global de Integraciones</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">
+          Diagrama de Integración de Servicios Externos
+        </div>
+        <pre class="mermaid">
+            graph TB
+                subgraph "SISTEMA BANCARIO BP"
+                    AG[API Gateway<br/>Kong/Nginx]
+                    MS1[MS-Pagos<br/>Interbancarios]
+                    MS2[MS-Notificaciones]
+                    MS3[MS-Autenticación]
+                    MS4[MS-Auditoría]
+                    MS5[MS-Datos-Cliente]
+                    KAFKA[Kafka Event Bus]
+                    
+                    AG --> MS1
+                    AG --> MS2
+                    AG --> MS3
+                    AG --> MS5
+                    MS1 --> KAFKA
+                    MS2 --> KAFKA
+                    MS3 --> KAFKA
+                    MS4 --> KAFKA
+                end
+                
+                subgraph "SERVICIOS EXTERNOS"
+                    ACH[ACH Network<br/>Clearinghouse]
+                    FCM[Firebase Cloud<br/>Messaging]
+                    SMTP[Email Service<br/>SMTP/SendGrid]
+                    OAUTH[OAuth Provider<br/>Existente]
+                    KYC[KYC/AML Service<br/>Onboarding]
+                    FRAUD[Fraud Detection<br/>API]
+                    BIO[Biometric Service<br/>AWS Rekognition]
+                end
+                
+                MS1 -.->|HTTPS/REST| ACH
+                MS2 -.->|Push| FCM
+                MS2 -.->|SMTP| SMTP
+                MS3 -.->|OAuth 2.0| OAUTH
+                MS5 -.->|REST API| KYC
+                MS1 -.->|REST API| FRAUD
+                MS3 -.->|REST API| BIO
+                
+                style AG fill:#667eea,stroke:#333,color:#fff
+                style KAFKA fill:#764ba2,stroke:#333,color:#fff
+                style ACH fill:#ff9800,stroke:#333,color:#fff
+                style FCM fill:#ff9800,stroke:#333,color:#fff
+                style FRAUD fill:#f44336,stroke:#333,color:#fff
+        </pre>
+      </div>
+    </div>
+
+    <h2>14.2 Flujo de Transferencia Interbancaria con Patrón SAGA</h2>
+
+    <div class="section">
+      <h3>Proceso Completo con Compensación Automática</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">
+          Flujo SAGA para Transferencia Interbancaria
+        </div>
+        <pre class="mermaid">
+            sequenceDiagram
+                participant U as Usuario<br/>App Móvil
+                participant AG as API Gateway
+                participant MP as MS-Pagos<br/>Interbancarios
+                participant MC as MS-Datos<br/>Cliente
+                participant DB as PostgreSQL<br/>Write DB
+                participant K as Kafka
+                participant ACH as ACH Network
+                participant MN as MS-Notificaciones
+                participant MA as MS-Auditoría
+                
+                U->>AG: POST /transfers/interbank
+                AG->>AG: Valida JWT + Rate Limit
+                AG->>MP: Enruta solicitud
+                
+                Note over MP: SAGA STEP 1: Validación
+                MP->>MC: GET /balances/{accountId}
+                MC-->>MP: Balance: $5,000
+                MP->>MP: ✓ Valida saldo suficiente
+                
+                Note over MP: SAGA STEP 2: Débito
+                MP->>DB: BEGIN TRANSACTION
+                MP->>DB: Debita $1,000 de cuenta
+                MP->>DB: COMMIT
+                DB-->>MP: ✓ SUCCESS
+                MP->>K: Event: transfer.debited
+                
+                Note over MP: SAGA STEP 3: Auditoría
+                K->>MA: Consume event
+                MA->>MA: Log inmutable registrado
+                MA-->>K: ACK
+                
+                Note over MP: SAGA STEP 4: ACH Network
+                MP->>ACH: POST /transfers
+                ACH-->>MP: ✗ FAILURE (timeout)
+                
+                Note over MP: SAGA COMPENSATION
+                MP->>MP: Inicia rollback
+                MP->>DB: BEGIN TRANSACTION
+                MP->>DB: Acredita $1,000 (reversa)
+                MP->>DB: COMMIT
+                MP->>K: Event: transfer.failed
+                
+                K->>MN: Consume event
+                MN->>U: Push: "Transferencia fallida"
+                K->>MA: Consume event
+                MA->>MA: Log compensación
+                
+                MP-->>AG: 503 Service Unavailable
+                AG-->>U: Error + Retry info
+        </pre>
+      </div>
+
+      <div class="warning">
+        <h4>⚠️ Manejo de Compensación</h4>
+        <p>El patrón SAGA garantiza consistencia eventual mediante:</p>
+        <ul>
+          <li>
+            <strong>Transacciones locales:</strong> Cada microservicio maneja su
+            propia transacción
+          </li>
+          <li>
+            <strong>Eventos de compensación:</strong> Si un paso falla, se
+            ejecutan compensaciones automáticas
+          </li>
+          <li>
+            <strong>Estado persistente:</strong> Redis mantiene el estado del
+            SAGA para recuperación
+          </li>
+          <li>
+            <strong>Idempotencia:</strong> Todas las operaciones son
+            idempotentes (pueden repetirse sin efectos)
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>14.3 Flujo de Autenticación Multi-Factor (MFA)</h2>
+
+    <div class="section">
+      <h3>Proceso de Login con Biometría y OTP</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Autenticación Multi-Factor Completa</div>
+        <pre class="mermaid">
+            sequenceDiagram
+                participant U as Usuario<br/>App Móvil
+                participant AG as API Gateway
+                participant MA as MS-Autenticación
+                participant REDIS as Redis Cache
+                participant OAUTH as OAuth Provider
+                participant BIO as Biometric Service
+                participant SMS as SMS Gateway
+                participant DB as PostgreSQL
+                
+                U->>AG: POST /auth/login<br/>{email, password}
+                AG->>MA: Valida credenciales
+                MA->>DB: SELECT * FROM users
+                DB-->>MA: User found
+                MA->>MA: Bcrypt verify password
+                
+                alt Password válido
+                    MA->>REDIS: Guarda sesión temporal<br/>TTL: 5 min
+                    MA->>SMS: Envía OTP 6 dígitos
+                    MA-->>U: 200 OK<br/>{sessionId, requireMFA: true}
+                    
+                    U->>U: Usuario ingresa OTP
+                    U->>AG: POST /auth/verify-otp<br/>{sessionId, otp}
+                    AG->>MA: Valida OTP
+                    MA->>REDIS: GET otp:{sessionId}
+                    REDIS-->>MA: OTP: 123456
+                    MA->>MA: Compara OTP
+                    
+                    alt OTP correcto
+                        MA->>U: Solicita biometría
+                        U->>U: FaceID/TouchID
+                        U->>AG: POST /auth/biometric<br/>{sessionId, biometricData}
+                        AG->>MA: Valida biometría
+                        MA->>BIO: Verify biometric
+                        BIO-->>MA: ✓ Match 98%
+                        
+                        MA->>OAUTH: Request JWT tokens
+                        OAUTH-->>MA: {accessToken, refreshToken}
+                        MA->>REDIS: Guarda refresh token<br/>TTL: 30 días
+                        MA->>DB: UPDATE last_login
+                        MA-->>U: 200 OK<br/>{accessToken, refreshToken}
+                        
+                    else OTP incorrecto
+                        MA->>REDIS: Incrementa intentos fallidos
+                        MA-->>U: 401 Unauthorized
+                    end
+                    
+                else Password inválido
+                    MA->>REDIS: Incrementa intentos fallidos
+                    MA->>DB: UPDATE failed_attempts
+                    MA-->>U: 401 Unauthorized
+                end
+        </pre>
+      </div>
+    </div>
+
+    <h2>14.4 Flujo de Procesamiento de Eventos con Kafka</h2>
+
+    <div class="section">
+      <h3>Event-Driven Architecture en Acción</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Procesamiento Asíncrono de Eventos</div>
+        <pre class="mermaid">
+            graph LR
+                subgraph "PRODUCERS"
+                    P1[MS-Pagos]
+                    P2[MS-Transferencias]
+                    P3[MS-Autenticación]
+                end
+                
+                subgraph "KAFKA CLUSTER"
+                    T1[Topic: payments<br/>Partitions: 6]
+                    T2[Topic: transfers<br/>Partitions: 6]
+                    T3[Topic: auth-events<br/>Partitions: 3]
+                    T4[Topic: notifications<br/>Partitions: 3]
+                    T5[Topic: audit-logs<br/>Partitions: 12]
+                end
+                
+                subgraph "CONSUMERS"
+                    C1[MS-Notificaciones<br/>Consumer Group: notif]
+                    C2[MS-Auditoría<br/>Consumer Group: audit]
+                    C3[MS-Fraud-Detection<br/>Consumer Group: fraud]
+                    C4[MS-Analytics<br/>Consumer Group: analytics]
+                end
+                
+                P1 -->|Produce| T1
+                P2 -->|Produce| T2
+                P3 -->|Produce| T3
+                
+                T1 --> T4
+                T2 --> T4
+                T3 --> T4
+                
+                T1 --> T5
+                T2 --> T5
+                T3 --> T5
+                
+                T4 --> C1
+                T5 --> C2
+                T1 --> C3
+                T2 --> C3
+                T5 --> C4
+                
+                style T1 fill:#ff9800,stroke:#333,color:#fff
+                style T2 fill:#ff9800,stroke:#333,color:#fff
+                style T3 fill:#ff9800,stroke:#333,color:#fff
+                style T4 fill:#764ba2,stroke:#333,color:#fff
+                style T5 fill:#764ba2,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <div class="note">
+        <h4>📌 Ventajas del Event-Driven con Kafka</h4>
+        <ul>
+          <li>
+            <strong>Desacoplamiento:</strong> Los productores no conocen a los
+            consumidores
+          </li>
+          <li>
+            <strong>Escalabilidad:</strong> Particiones permiten procesamiento
+            paralelo
+          </li>
+          <li>
+            <strong>Resiliencia:</strong> Replicación x3 garantiza durabilidad
+          </li>
+          <li>
+            <strong>Replay:</strong> Posibilidad de re-procesar eventos
+            históricos
+          </li>
+          <li><strong>Throughput:</strong> Millones de mensajes por segundo</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>14.5 Flujo de Monitoreo y Observabilidad</h2>
+
+    <div class="section">
+      <h3>Stack de Observabilidad Completo</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">
+          Integración ELK + Prometheus + Grafana + Jaeger
+        </div>
+        <pre class="mermaid">
+            graph TB
+                subgraph "MICROSERVICIOS"
+                    MS1[MS-Pagos]
+                    MS2[MS-Transferencias]
+                    MS3[MS-Autenticación]
+                    MS4[MS-Notificaciones]
+                end
+                
+                subgraph "LOGGING - ELK Stack"
+                    FB[Filebeat<br/>Log Shipper]
+                    LS[Logstash<br/>Processing]
+                    ES[Elasticsearch<br/>Storage]
+                    KB[Kibana<br/>Visualization]
+                end
+                
+                subgraph "METRICS - Prometheus"
+                    PROM[Prometheus<br/>Metrics Server]
+                    GRAF[Grafana<br/>Dashboards]
+                    AM[AlertManager<br/>Alerts]
+                end
+                
+                subgraph "TRACING - Jaeger"
+                    JAEG[Jaeger<br/>Tracing Server]
+                    JUI[Jaeger UI<br/>Trace Viewer]
+                end
+                
+                MS1 -->|Logs| FB
+                MS2 -->|Logs| FB
+                MS3 -->|Logs| FB
+                MS4 -->|Logs| FB
+                
+                MS1 -->|Metrics| PROM
+                MS2 -->|Metrics| PROM
+                MS3 -->|Metrics| PROM
+                MS4 -->|Metrics| PROM
+                
+                MS1 -->|Traces| JAEG
+                MS2 -->|Traces| JAEG
+                MS3 -->|Traces| JAEG
+                MS4 -->|Traces| JAEG
+                
+                FB --> LS
+                LS --> ES
+                ES --> KB
+                
+                PROM --> GRAF
+                PROM --> AM
+                
+                JAEG --> JUI
+                
+                style ES fill:#764ba2,stroke:#333,color:#fff
+                style PROM fill:#667eea,stroke:#333,color:#fff
+                style JAEG fill:#ff9800,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Componente</th>
+            <th>Función</th>
+            <th>Métricas Clave</th>
+            <th>Alertas</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Elasticsearch</strong></td>
+            <td>Almacenamiento de logs indexados</td>
+            <td>Logs/segundo, Disk usage, Query latency</td>
+            <td>Disk > 80%, Query > 5s</td>
+          </tr>
+          <tr>
+            <td><strong>Prometheus</strong></td>
+            <td>Métricas y time-series</td>
+            <td>CPU, Memory, Request rate, Error rate</td>
+            <td>Error rate > 5%, Memory > 90%</td>
+          </tr>
+          <tr>
+            <td><strong>Grafana</strong></td>
+            <td>Visualización y dashboards</td>
+            <td>Response time, Throughput, SLA</td>
+            <td>SLA < 99.9%, Response > 2s</td>
+          </tr>
+          <tr>
+            <td><strong>Jaeger</strong></td>
+            <td>Distributed tracing</td>
+            <td>Trace duration, Span count, Error traces</td>
+            <td>Trace > 10s, Error span detected</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>14.6 Flujo de CI/CD Pipeline</h2>
+
+    <div class="section">
+      <h3>Integración y Despliegue Continuo</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Pipeline GitOps con ArgoCD</div>
+        <pre class="mermaid">
+            graph LR
+                DEV[Developer<br/>Push Code] --> GIT[GitHub<br/>Repository]
+                GIT --> GHA[GitHub Actions<br/>CI Pipeline]
+                
+                GHA --> TEST[Unit Tests<br/>Coverage > 80%]
+                TEST --> LINT[Linting<br/>SonarQube]
+                LINT --> SEC[Security Scan<br/>Trivy + SAST]
+                SEC --> BUILD[Docker Build<br/>Multi-stage]
+                BUILD --> PUSH[Docker Push<br/>Harbor Registry]
+                
+                PUSH --> ARGO[ArgoCD<br/>GitOps]
+                ARGO --> K8S_DEV[K8s Dev<br/>Auto Deploy]
+                
+                K8S_DEV --> SMOKE[Smoke Tests<br/>Health Checks]
+                SMOKE --> APPROVE[Manual Approval<br/>QA Team]
+                
+                APPROVE --> K8S_STAGE[K8s Staging<br/>Auto Deploy]
+                K8S_STAGE --> E2E[E2E Tests<br/>Selenium/Cypress]
+                E2E --> PERF[Performance Tests<br/>JMeter/k6]
+                PERF --> APPROVE2[Manual Approval<br/>DevOps Lead]
+                
+                APPROVE2 --> K8S_PROD[K8s Production<br/>Blue-Green Deploy]
+                K8S_PROD --> MONITOR[Monitor<br/>Grafana/Prometheus]
+                
+                style GIT fill:#333,stroke:#333,color:#fff
+                style ARGO fill:#667eea,stroke:#333,color:#fff
+                style K8S_PROD fill:#4caf50,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <div class="success">
+        <h4>✅ Etapas del CI/CD Pipeline</h4>
+        <ol>
+          <li>
+            <strong>Commit Stage:</strong> Unit tests, linting, security
+            scanning (5-10 min)
+          </li>
+          <li>
+            <strong>Build Stage:</strong> Docker multi-stage build + push to
+            registry (3-5 min)
+          </li>
+          <li>
+            <strong>Deploy DEV:</strong> ArgoCD auto-sync a Kubernetes dev (2
+            min)
+          </li>
+          <li>
+            <strong>Testing Stage:</strong> Smoke tests + QA approval (manual)
+          </li>
+          <li>
+            <strong>Deploy STAGING:</strong> ArgoCD sync a staging + E2E tests
+            (15-20 min)
+          </li>
+          <li>
+            <strong>Deploy PRODUCTION:</strong> Blue-Green deployment con
+            rollback automático (5 min)
+          </li>
+          <li>
+            <strong>Monitoring:</strong> Validación de métricas post-deployment
+            (continuo)
+          </li>
+        </ol>
+        <p>
+          <strong>Tiempo total de pipeline:</strong> ~45-60 minutos desde commit
+          hasta producción
+        </p>
+      </div>
+    </div>
+
+    <h2>14.7 Flujo de Gestión de Secrets</h2>
+
+    <div class="section">
+      <h3>HashiCorp Vault + Kubernetes Integration</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Secrets Management con Vault</div>
+        <pre class="mermaid">
+            sequenceDiagram
+                participant POD as K8s Pod<br/>MS-Pagos
+                participant SA as ServiceAccount<br/>vault-auth
+                participant VAULT as HashiCorp Vault
+                participant DB as PostgreSQL
+                participant K8S as K8s API
+                
+                Note over POD: Pod inicia
+                POD->>K8S: Lee ServiceAccount token
+                K8S-->>POD: JWT token
+                
+                POD->>VAULT: POST /v1/auth/kubernetes/login<br/>{jwt, role}
+                VAULT->>VAULT: Valida JWT con K8s API
+                VAULT-->>POD: Vault token (TTL: 1h)
+                
+                POD->>VAULT: GET /v1/secret/data/database<br/>Header: X-Vault-Token
+                VAULT->>VAULT: Valida permisos (policy)
+                VAULT-->>POD: {username, password, host}
+                
+                POD->>DB: Conecta con credenciales
+                DB-->>POD: Connection established
+                
+                Note over POD: Cada 45 min
+                POD->>VAULT: POST /v1/auth/token/renew
+                VAULT-->>POD: Token renovado
+                
+                Note over POD: Si token expira
+                POD->>VAULT: Re-autenticación completa
+        </pre>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Tipo de Secret</th>
+            <th>Ubicación en Vault</th>
+            <th>TTL</th>
+            <th>Rotación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Database Passwords</td>
+            <td><code>secret/database/postgres</code></td>
+            <td>1 hora</td>
+            <td>Automática cada 24h</td>
+          </tr>
+          <tr>
+            <td>API Keys</td>
+            <td><code>secret/external/ach-network</code></td>
+            <td>7 días</td>
+            <td>Manual con alertas</td>
+          </tr>
+          <tr>
+            <td>JWT Signing Keys</td>
+            <td><code>secret/auth/jwt-keys</code></td>
+            <td>30 días</td>
+            <td>Automática mensual</td>
+          </tr>
+          <tr>
+            <td>TLS Certificates</td>
+            <td><code>pki/issue/api-gateway</code></td>
+            <td>90 días</td>
+            <td>Automática (cert-manager)</td>
+          </tr>
+          <tr>
+            <td>Encryption Keys</td>
+            <td><code>transit/keys/customer-data</code></td>
+            <td>365 días</td>
+            <td>Key rotation sin downtime</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2>14.8 Flujo de Disaster Recovery</h2>
+
+    <div class="section">
+      <h3>Estrategia de Backup y Recuperación</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Proceso de Disaster Recovery</div>
+        <pre class="mermaid">
+        graph TB
+            subgraph "REGIÓN PRIMARIA - us-east-1"
+                K8S1[Kubernetes Cluster<br/>Primary]
+                DB1[PostgreSQL<br/>Master]
+                KAFKA1[Kafka Cluster<br/>Primary]
+            end
+            
+            subgraph "BACKUP AUTOMÁTICO"
+                VELERO[Velero<br/>K8s Backup]
+                PGBACK[pg_basebackup<br/>+ WAL Archiving]
+                MINIO[MinIO S3<br/>Backup Storage]
+            end
+            
+            subgraph "REGIÓN SECUNDARIA - us-west-2"
+                K8S2[Kubernetes Cluster<br/>Standby]
+                DB2[PostgreSQL<br/>Read Replica]
+                KAFKA2[Kafka Cluster<br/>Mirror Maker 2]
+            end
+            
+            K8S1 -->|Daily Snapshot| VELERO
+            DB1 -->|Streaming Replication| DB2
+            DB1 -->|Incremental Backup| PGBACK
+            KAFKA1 -->|Mirror Topics| KAFKA2
+            
+            VELERO --> MINIO
+            PGBACK --> MINIO
+            
+            MINIO -.->|Restore| K8S2
+            MINIO -.->|Restore| DB2
+            
+            style K8S1 fill:#4caf50,stroke:#333,color:#fff
+            style K8S2 fill:#ff9800,stroke:#333,color:#fff
+            style MINIO fill:#667eea,stroke:#333,color:#fff
+        </pre>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Componente</th>
+            <th>RPO</th>
+            <th>RTO</th>
+            <th>Estrategia de Backup</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>PostgreSQL (Transaccional)</strong></td>
+            <td>&lt; 5 minutos</td>
+            <td>&lt; 30 minutos</td>
+            <td>Streaming replication + WAL archiving a S3</td>
+          </tr>
+          <tr>
+            <td><strong>Kubernetes Cluster</strong></td>
+            <td>&lt; 1 hora</td>
+            <td>&lt; 2 horas</td>
+            <td>Velero daily snapshots (ConfigMaps, Secrets, PVs)</td>
+          </tr>
+          <tr>
+            <td><strong>Kafka Topics</strong></td>
+            <td>&lt; 10 minutos</td>
+            <td>&lt; 1 hora</td>
+            <td>MirrorMaker 2 a región secundaria + retention 7 días</td>
+          </tr>
+          <tr>
+            <td><strong>Redis Cache</strong></td>
+            <td>&lt; 1 hora</td>
+            <td>&lt; 15 minutos</td>
+            <td>RDB snapshots cada 15 min + AOF persistencia</td>
+          </tr>
+          <tr>
+            <td><strong>Elasticsearch Logs</strong></td>
+            <td>&lt; 24 horas</td>
+            <td>&lt; 4 horas</td>
+            <td>Snapshot repository a S3 (daily)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="warning">
+        <h4>⚠️ Plan de Disaster Recovery</h4>
+        <p>
+          <strong>Escenario 1: Fallo de región completa (AWS us-east-1)</strong>
+        </p>
+        <ol>
+          <li>Detección automática de fallo (health checks cada 30s)</li>
+          <li>DNS failover a región us-west-2 (Route 53 - 60s)</li>
+          <li>Promoción de PostgreSQL replica a master (&lt; 5 min)</li>
+          <li>Activación de Kafka en región secundaria (&lt; 10 min)</li>
+          <li>Deploy de aplicaciones desde Velero backup (&lt; 30 min)</li>
+          <li><strong>Total RTO: &lt; 1 hora</strong></li>
+        </ol>
+      </div>
+    </div>
+
+    <h2>14.9 Integración con ACH Network</h2>
+
+    <div class="section">
+      <h3>Protocolo de Comunicación Interbancaria</h3>
+
+      <div class="diagram">
+        <div class="diagram-title">Flujo de Transferencia ACH</div>
+        <pre class="mermaid">
+            sequenceDiagram
+                participant MS as MS-Pagos<br/>Interbancarios
+                participant GW as ACH Gateway<br/>Clearinghouse
+                participant VALID as ACH Validation<br/>Service
+                participant SETTLE as Settlement<br/>Engine
+                participant BANK as Banco Destino
+                
+                Note over MS,BANK: FASE 1: Iniciación (Día T)
+                MS->>GW: POST /ach/transfer<br/>{amount, routing, account}
+                GW->>VALID: Valida routing number
+                VALID-->>GW: ✓ Valid bank
+                GW->>VALID: Valida account format
+                VALID-->>GW: ✓ Valid account
+                GW-->>MS: 202 Accepted<br/>{ach_trace_number}
+                
+                Note over MS,BANK: FASE 2: Procesamiento (Día T+1)
+                GW->>GW: Batch processing<br/>(10:00 PM cutoff)
+                GW->>SETTLE: Envía lote ACH<br/>NACHA format
+                SETTLE->>SETTLE: Valida formato NACHA
+                SETTLE->>BANK: Notifica transferencia entrante
+                BANK-->>SETTLE: ACK recibido
+                
+                Note over MS,BANK: FASE 3: Settlement (Día T+2)
+                SETTLE->>BANK: Acredita cuenta destino
+                BANK->>BANK: Post to account
+                BANK-->>SETTLE: Confirmation
+                SETTLE-->>GW: Settlement complete
+                GW-->>MS: Webhook: transfer.completed
+                
+                Note over MS,BANK: FASE 4: Notificación
+                MS->>MS: Actualiza estado a COMPLETED
+                MS->>MS: Genera evento Kafka
+        </pre>
+      </div>
+
+      <div class="note">
+        <h4>📋 Códigos de Transacción ACH (SEC Codes)</h4>
+        <ul>
+          <li>
+            <strong>PPD (Prearranged Payment):</strong> Transferencias
+            persona-a-persona
+          </li>
+          <li>
+            <strong>CCD (Corporate Credit):</strong> Transferencias corporativas
+          </li>
+          <li>
+            <strong>WEB (Internet-Initiated):</strong> Iniciadas desde
+            web/mobile
+          </li>
+          <li>
+            <strong>TEL (Telephone-Initiated):</strong> Iniciadas por teléfono
+          </li>
+        </ul>
+        <p>
+          <strong>Tiempo de liquidación estándar:</strong> 2-3 días hábiles (T+2
+          o T+3)
+        </p>
+        <p>
+          <strong>Same-Day ACH:</strong> Disponible con fee adicional
+          (liquidación en 24h)
+        </p>
+      </div>
+    </div>
+
+    <h2>14.10 Resumen de Integraciones</h2>
+
+    <div class="section">
+      <table>
+        <thead>
+          <tr>
+            <th>Sistema Externo</th>
+            <th>Protocolo</th>
+            <th>Autenticación</th>
+            <th>Timeout</th>
+            <th>Retry Policy</th>
+            <th>Circuit Breaker</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>ACH Network</strong></td>
+            <td>HTTPS/REST</td>
+            <td>API Key + mTLS</td>
+            <td>30s</td>
+            <td>3 retries (exp backoff)</td>
+            <td>5 fallos → open 60s</td>
+          </tr>
+          <tr>
+            <td><strong>Firebase Cloud Messaging</strong></td>
+            <td>HTTP/2 + JSON</td>
+            <td>OAuth 2.0</td>
+            <td>10s</td>
+            <td>2 retries (linear)</td>
+            <td>10 fallos → open 30s</td>
+          </tr>
+          <tr>
+            <td><strong>SendGrid (Email)</strong></td>
+            <td>HTTPS/REST</td>
+            <td>API Key</td>
+            <td>15s</td>
+            <td>3 retries (exp backoff)</td>
+            <td>5 fallos → open 60s</td>
+          </tr>
+          <tr>
+            <td><strong>OAuth Provider</strong></td>
+            <td>OAuth 2.0 / OIDC</td>
+            <td>Client credentials</td>
+            <td>5s</td>
+            <td>2 retries (linear)</td>
+            <td>3 fallos → open 30s</td>
+          </tr>
+          <tr>
+            <td><strong>KYC/AML Service</strong></td>
+            <td>HTTPS/REST</td>
+            <td>API Key + Signature</td>
+            <td>20s</td>
+            <td>No retry (manual)</td>
+            <td>N/A</td>
+          </tr>
+          <tr>
+            <td><strong>Fraud Detection API</strong></td>
+            <td>HTTPS/REST</td>
+            <td>Bearer Token</td>
+            <td>5s</td>
+            <td>1 retry (fast fail)</td>
+            <td>10 fallos → open 120s</td>
+          </tr>
+          <tr>
+            <td><strong>AWS Rekognition</strong></td>
+            <td>AWS SDK (HTTP)</td>
+            <td>AWS SigV4</td>
+            <td>10s</td>
+            <td>AWS default (3x)</td>
+            <td>AWS SDK built-in</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="success">
+        <h3>✅ Conclusiones del Capítulo 14</h3>
+        <p>Los diagramas de integración presentados demuestran:</p>
+        <ul>
+          <li>
+            <strong>Arquitectura robusta:</strong> Patrón SAGA para consistencia
+            distribuida
+          </li>
+          <li>
+            <strong>Observabilidad completa:</strong> Stack ELK + Prometheus +
+            Jaeger integrados
+          </li>
+          <li>
+            <strong>Seguridad end-to-end:</strong> MFA + mTLS + Vault para
+            secrets
+          </li>
+          <li>
+            <strong>Alta disponibilidad:</strong> Multi-región con DR automático
+            (RTO &lt; 1h)
+          </li>
+          <li>
+            <strong>CI/CD maduro:</strong> GitOps con ArgoCD + pipeline completo
+          </li>
+          <li>
+            <strong>Integraciones estándar:</strong> ACH Network con protocolo
+            NACHA
+          </li>
+          <li>
+            <strong>Resiliencia:</strong> Circuit breakers + retry policies en
+            todas las integraciones
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 14 de 17</p>
+    </div>
+
+    <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

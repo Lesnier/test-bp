@@ -92,36 +92,49 @@
 
     <div class="diagram">
       <div class="diagram-title">Separación de Lecturas y Escrituras</div>
-      <pre>
-┌─────────────────────────────────────────────────────────┐
-│              CAPA DE APLICACIÓN                          │
-│           (Microservicios GraphQL)                       │
-└────────────┬─────────────────────────┬───────────────────┘
-             │ WRITE (Mutations)       │ READ (Queries)
-             │                         │
-    ┌────────▼────────┐       ┌────────▼─────────┐
-    │  PostgreSQL     │       │   MongoDB        │
-    │  WRITE DB       │       │   READ DB        │
-    │  (Transaccional)│       │   (Optimizada)   │
-    │                 │       │                  │
-    │ - Movimientos   │       │ - Vista Histórico│
-    │ - Productos     │       │ - Agregaciones   │
-    │ - Transacciones │       │ - Búsquedas      │
-    │ - ACID completo │       │ - Denormalizado  │
-    │                 │       │ - Sin Joins      │
-    └────────┬────────┘       └──────────────────┘
-             │                         ▲
-             │ Event Emitted           │
-             └────────┐         ┌──────┘
-                      │         │ Sync (Consistencia Eventual)
-              ┌───────▼─────────▼────────┐
-              │   KAFKA EVENT BUS        │
-              │                          │
-              │  Topic: data.sync        │
-              │  Latencia: 100-500ms     │
-              └──────────────────────────┘
-    </pre
-      >
+      <pre class="mermaid">
+flowchart TD
+    %% Estilos globales
+    classDef capa fill:#cfe8fc,stroke:#4682b4,stroke-width:2px,color:#000,border-radius:10px;
+    classDef dbwrite fill:#d5f5e3,stroke:#2e8b57,stroke-width:2px,color:#000,border-radius:10px;
+    classDef dbread fill:#fce5cd,stroke:#d2691e,stroke-width:2px,color:#000,border-radius:10px;
+    classDef kafka fill:#f6d8f8,stroke:#8b008b,stroke-width:2px,color:#000,border-radius:10px;
+    classDef detalle fill:#ffffff,stroke:#888,stroke-width:1.5px,color:#000,border-radius:8px;
+
+    %% Nodos principales
+    A["CAPA DE APLICACION<br/>
+        Microservicios GraphQL"]
+    A -->|WRITE - Mutations| B["PostgreSQL WRITE DB<br/>
+                                Transaccional"]
+    A -->|READ - Queries| C["MongoDB READ DB<br/>
+                             Optimizada"]
+
+    %% Detalles PostgreSQL
+    B --> B1["Movimientos"]
+    B --> B2["Productos"]
+    B --> B3["Transacciones"]
+    B --> B4["ACID completo"]
+
+    %% Detalles MongoDB
+    C --> C1["Vista Histórico"]
+    C --> C2["Agregaciones"]
+    C --> C3["Búsquedas"]
+    C --> C4["Denormalizado / Sin Joins"]
+
+    %% Kafka Event Bus
+    B -->|Event Emitted| D["KAFKA EVENT BUS<br/>
+                            Topic: data.sync<br/>
+                            Latencia: 100–500 ms"]
+    D -->|Sync&nbsp;-&nbsp;Consistencia&nbsp;Eventual| C
+
+    %% Asignar estilos
+    class A capa;
+    class B dbwrite;
+    class C dbread;
+    class D kafka;
+    class B1,B2,B3,B4,C1,C2,C3,C4 detalle;
+
+    </pre>
     </div>
 
     <h2>4.3 Consistencia Eventual</h2>
@@ -229,62 +242,56 @@
     <div class="section">
       <div class="diagram">
         <div class="diagram-title">Flujo Completo de Sincronización CQRS</div>
-        <pre>
-PASO 1: Usuario realiza transferencia
-    │
-    ▼
-GraphQL Mutation → MS-Pagos
-    │
-    ▼
-PASO 2: Escritura en PostgreSQL (Write DB)
-    │
-    ├─► BEGIN TRANSACTION
-    ├─► INSERT INTO transactions (...)
-    ├─► UPDATE accounts SET balance = balance - amount
-    ├─► COMMIT TRANSACTION ✓
-    │
-    └─► Transacción exitosa (ACID garantizado)
-    │
-    ▼
-PASO 3: Emisión de Evento a Kafka
-    │
-    ├─► Event: {
-    │       type: "TRANSACTION_CREATED",
-    │       transactionId: "txn-12345",
-    │       accountId: "acc-67890",
-    │       amount: 1000,
-    │       timestamp: "2025-10-06T10:30:00Z"
-    │   }
-    │
-    └─► Publicado en topic: data.sync
-    │
-    ▼
-PASO 4: Consumidor procesa evento
-    │
-    ├─► Worker Thread procesa en paralelo
-    ├─► Enriquece datos (agrega info cliente, categoría)
-    │
-    └─► Latencia: 100-300ms
-    │
-    ▼
-PASO 5: Actualización en MongoDB (Read DB)
-    │
-    ├─► db.transactions.insertOne({
-    │       transactionId: "txn-12345",
-    │       accountId: "acc-67890",
-    │       amount: 1000,
-    │       customerName: "Juan Pérez",  // Enriquecido
-    │       category: "Transferencia",    // Enriquecido
-    │       timestamp: "2025-10-06T10:30:00Z"
-    │   })
-    │
-    └─► Actualización en formato denormalizado (sin joins)
-    │
-    ▼
-PASO 6: Dato disponible para consultas rápidas
-    │
-    └─► Consultas desde MongoDB: <20ms
-        (vs 150-200ms si fuera join en PostgreSQL)
+        <pre class="mermaid">
+flowchart TD
+    %% Estilos
+    classDef paso fill:#d6eaf8,stroke:#2471a3,stroke-width:2px,color:#000,border-radius:10px;
+    classDef dbwrite fill:#d5f5e3,stroke:#239b56,stroke-width:2px,color:#000,border-radius:10px;
+    classDef kafka fill:#f6d8f8,stroke:#8b008b,stroke-width:2px,color:#000,border-radius:10px;
+    classDef worker fill:#fdebd0,stroke:#d68910,stroke-width:2px,color:#000,border-radius:10px;
+    classDef dbread fill:#fcf3cf,stroke:#b7950b,stroke-width:2px,color:#000,border-radius:10px;
+    classDef resultado fill:#e8daef,stroke:#6c3483,stroke-width:2px,color:#000,border-radius:10px;
+
+    %% PASO 1
+    A["🟢 PASO 1:<br/>Usuario realiza transferencia"]
+    A --> B["GraphQL Mutation → Microservicio de Pagos"]
+
+    %% PASO 2
+    B --> C["PASO 2:<br/>Escritura en PostgreSQL (Write DB)"]
+    C --> C1["BEGIN TRANSACTION"]
+    C --> C2["INSERT INTO transactions(...)"]
+    C --> C3["UPDATE accounts SET balance = balance - amount"]
+    C --> C4["COMMIT TRANSACTION ✓"]
+    C --> C5["Transacción exitosa<br/>(ACID garantizado)"]
+
+    %% PASO 3
+    C --> D["PASO 3:<br/>Emisión de Evento a Kafka"]
+    D --> D1["Event:<br/>{ type: 'TRANSACTION_CREATED',<br/>transactionId: 'txn-12345',<br/>accountId: 'acc-67890',<br/>amount: 1000,<br/>timestamp: '2025-10-06T10:30:00Z' }"]
+    D --> D2["Publicado en topic: data.sync"]
+
+    %% PASO 4
+    D --> E["PASO 4:<br/>Consumidor procesa evento"]
+    E --> E1["Worker Thread procesa en paralelo"]
+    E --> E2["Enriquece datos:<br/>+ info cliente, + categoría"]
+    E --> E3["Latencia: 100–300 ms"]
+
+    %% PASO 5
+    E --> F["PASO 5:<br/>Actualización en MongoDB (Read DB)"]
+    F --> F1["db.transactions.insertOne({<br/>transactionId:'txn-12345',<br/>accountId:'acc-67890',<br/>amount:1000,<br/>customerName:'Juan Pérez',<br/>category:'Transferencia',<br/>timestamp:'2025-10-06T10:30:00Z'<br/>})"]
+    F --> F2["Actualización denormalizada<br/>(sin joins)"]
+
+    %% PASO 6
+    F --> G["PASO 6:<br/>Dato disponible para consultas rápidas"]
+    G --> G1["Consultas desde MongoDB: < 20ms<br/>(vs 150–200ms si fuera join en PostgreSQL)"]
+
+    %% Asignación de clases
+    class A,B paso;
+    class C,C1,C2,C3,C4,C5 dbwrite;
+    class D,D1,D2 kafka;
+    class E,E1,E2,E3 worker;
+    class F,F1,F2 dbread;
+    class G,G1 resultado;
+
         </pre>
       </div>
     </div>
@@ -299,25 +306,34 @@ PASO 6: Dato disponible para consultas rápidas
 
       <div class="diagram">
         <div class="diagram-title">Estrategia de Caché Multi-Nivel</div>
-        <pre>
-┌─────────────────────────────────────────────┐
-│          MS-Datos-Cliente                   │
-└──────────┬──────────────────┬───────────────┘
-           │                  │
-    ┌──────▼──────┐    ┌──────▼────────┐
-    │    Redis    │    │  PostgreSQL   │
-    │   (Cache)   │    │   (Fuente)    │
-    │             │    │               │
-    │ TTL: 1 hora │    │ Datos Cliente │
-    │ LRU eviction│    │ Authoritative │
-    │ Hit rate:70%│    │               │
-    └─────────────┘    └───────────────┘
+        <pre class="mermaid">
+flowchart TD
+    %% ==== Estilos ====
+    classDef ms fill:#d6eaf8,stroke:#2471a3,stroke-width:2px,color:#000,border-radius:10px;
+    classDef cache fill:#fdebd0,stroke:#d68910,stroke-width:2px,color:#000,border-radius:10px;
+    classDef db fill:#d5f5e3,stroke:#1e8449,stroke-width:2px,color:#000,border-radius:10px;
 
-Flujo de Lectura:
-1. Request → Redis (caché)
-2. Cache HIT (70%) → Respuesta inmediata (2ms)
-3. Cache MISS (30%) → PostgreSQL (50ms) + Guardar en Redis
+    %% ==== Microservicio ====
+    A["MS-Datos-Cliente"]
+    class A ms
+
+    %% ==== Conexiones ====
+    A --> B["Redis<br/>(Cache)<br/><br/>TTL: 1 hora<br/>LRU eviction<br/>Hit rate: 70%"]
+    A --> C["PostgreSQL<br/>(Fuente)<br/><br/>Datos Cliente<br/>Authoritative"]
+
+    %% ==== Clases ====
+    class B cache
+    class C db
         </pre>
+      </div>
+
+      <div class="note">
+        <strong> Flujo de Lectura: </strong>
+        <ul>
+          <li>1. Request → Redis (caché)</li>
+          <li>2. Cache HIT (70%) → Respuesta inmediata (2ms)</li>
+          <li>3. Cache MISS (30%) → PostgreSQL (50ms) + Guardar en Redis</li>
+        </ul>
       </div>
 
       <h3>4.5.1 Estrategia de Caché</h3>
@@ -466,19 +482,32 @@ db.transactions.createIndex({ "searchableText": "text" })
 
       <div class="diagram">
         <div class="diagram-title">Arquitectura de Replicación PostgreSQL</div>
-        <pre>
-┌─────────────┐
-│  Primary    │
-│ (Read+Write)│
-└──────┬──────┘
-       │ Streaming Replication (Asíncrona)
-       ├────────────┬────────────┐
-       │            │            │
-┌──────▼──────┐ ┌───▼──────┐ ┌──▼───────┐
-│  Replica 1  │ │ Replica 2│ │ Replica 3│
-│ (Read-only) │ │(Read-only│ │(Read-only│
-│  Zona AZ-A  │ │ Zona AZ-B│ │ Zona AZ-C│
-└─────────────┘ └──────────┘ └──────────┘
+        <pre class="mermaid">
+flowchart TD
+    A["Primary<br>(Read+Write)"] -- Streaming Replication<br>(Asíncrona) --> R1["Replica 1<br>(Read-only)<br>Zona AZ-A"]
+    A --> R2["Replica 2<br>(Read-only)<br>Zona AZ-B"] & R3["Replica 3<br>(Read-only)<br>Zona AZ-C"]
+
+    A@{ shape: rounded}
+    R1@{ shape: rounded}
+    R2@{ shape: rounded}
+    R3@{ shape: rounded}
+     A:::pastel
+     A:::Peach
+     A:::Pine
+     R1:::pastel
+     R1:::Ash
+     R1:::Peach
+     R2:::pastel
+     R2:::Peach
+     R3:::pastel
+     R3:::Peach
+    classDef pastel fill:#ffe7ba,stroke:#a88039,stroke-width:2px,color:#463918
+    classDef Pine stroke-width:1px, stroke-dasharray:none, stroke:#254336, fill:#27654A, color:#FFFFFF
+    classDef Ash stroke-width:1px, stroke-dasharray:none, stroke:#999999, fill:#EEEEEE, color:#000000
+    classDef Peach stroke-width:1px, stroke-dasharray:none, stroke:#FBB35A, fill:#FFEFDB, color:#8F632D
+
+
+
         </pre>
       </div>
 
@@ -639,5 +668,8 @@ db.transactions.createIndex({ "searchableText": "text" })
     <div class="footer">
       <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 4 de 17</p>
     </div>
+    <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>

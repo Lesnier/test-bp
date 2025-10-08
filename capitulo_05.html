@@ -30,44 +30,65 @@
 
       <div class="diagram">
         <div class="diagram-title">Arquitectura Completa de Auditoría</div>
-        <pre>
-                    ┌─────────────────────────┐
-                    │  Todos los Microservicios│
-                    │  (Emisores de Eventos)  │
-                    └───────────┬─────────────┘
-                                │ Emit Events
-                    ┌───────────▼─────────────┐
-                    │   KAFKA EVENT BUS       │
-                    │ Topic: audit.events     │
-                    └───────────┬─────────────┘
-                                │ Consume
-                    ┌───────────▼─────────────┐
-                    │  MS-Auditoría           │
-                    │  (GraphQL API)          │
-                    │                         │
-                    │  Worker Pool (4 workers)│
-                    │  - Event Processing     │
-                    │  - Log Enrichment       │
-                    │  - Compliance Checks    │
-                    │  - Anomaly Detection    │
-                    └───────────┬─────────────┘
-                                │
-            ┌───────────────────┼───────────────────┐
-            │                   │                   │
-    ┌───────▼────────┐  ┌───────▼──────┐  ┌────────▼────────┐
-    │ Elasticsearch  │  │  Prometheus  │  │   PostgreSQL    │
-    │ (Event Store)  │  │  (Métricas)  │  │ (Audit Records) │
-    │                │  │              │  │                 │
-    │ - Full-text    │  │ - Counters   │  │ - Structured    │
-    │ - Aggregations │  │ - Histograms │  │ - Compliance    │
-    │ - 7 años       │  │ - Alerts     │  │ - 10 años       │
-    └───────┬────────┘  └───────┬──────┘  └─────────────────┘
-            │                   │
-    ┌───────▼────────┐  ┌───────▼──────┐
-    │    Kibana      │  │   Grafana    │
-    │ (Explorador)   │  │ (Dashboards) │
-    │ (Compliance)   │  │ (Métricas)   │
-    └────────────────┘  └──────────────┘
+        <pre class="mermaid">
+               graph TD
+                    %% 1. Definición de Nodos (la estructura del diagrama)
+                    A["Todos los Microservicios<br/> (Emisores de Eventos)"]
+                    B["KAFKA EVENT BUS<br/>
+                        Topic: audit.events"]
+                    C["MS-Auditoría<br/>(GraphQL API)<br/><br/>
+                          Worker Pool (4 workers)<br/>
+                          - Event Processing<br/>
+                          - Log Enrichment<br/>
+                          - Compliance Checks<br/>
+                          - Anomaly Detection"]
+                    D["<strong>Elasticsearch</strong><br/>(Event Store)<br/><br/>
+                    - Full-text<br/>
+                    - Aggregations<br/>
+                    - 7 años"]
+                    E["<strong>Prometheus</strong><br/>(Métricas)<br/><br/>
+                    - Counters<br/>
+                    - Histograms<br/>
+                    - Alerts"]
+                    F["<strong>PostgreSQL</strong><br/>(Audit Records)<br/><br/>
+                    - Structured<br/>
+                    - Compliance<br/>
+                    - 10 años"]
+                    G["<strong>Kibana</strong><br/>(Explorador)<br/>(Compliance)"]
+                    H["<strong>Grafana</strong><br/>(Dashboards)<br/>(Métricas)"]
+
+                    %% 2. Definición de Conexiones (las flechas)
+                    A -- "Emit Events" --> B
+                    B -- "Consume" --> C
+                    C --> D
+                    C --> E
+                    C --> F
+                    D --> G
+                    E --> H
+
+                    %% 3. Definición de Estilos (colores, bordes, etc.)
+                    
+                    %% Nivel 1: Emisores
+                    classDef level1 fill:#EBF5FB,stroke:#85C1E9,stroke-width:2px,rx:10,ry:10,color:#333
+                    
+                    %% Nivel 2: Bus de Eventos
+                    classDef level2 fill:#E8F8F5,stroke:#76D7C4,stroke-width:2px,rx:10,ry:10,color:#333
+                    
+                    %% Nivel 3: Consumidor Principal
+                    classDef level3 fill:#FEF9E7,stroke:#FAD7A0,stroke-width:2px,rx:10,ry:10,color:#333
+                    
+                    %% Nivel 4: Almacenamiento y Métricas
+                    classDef level4 fill:#F4ECF7,stroke:#D7BDE2,stroke-width:2px,rx:10,ry:10,color:#333
+                    
+                    %% Nivel 5: Visualización
+                    classDef level5 fill:#FDEDEC,stroke:#F5B7B1,stroke-width:2px,rx:10,ry:10,color:#333
+
+                    %% 4. Asignación de Estilos a los Nodos
+                    class A level1
+                    class B level2
+                    class C level3
+                    class D,E,F level4
+                    class G,H level5
         </pre>
       </div>
     </div>
@@ -344,31 +365,42 @@ query ComplianceDashboard {
         <div class="diagram-title">
           Arquitectura de Worker Pool para Auditoría
         </div>
-        <pre>
-┌────────────────────────────────────────────────┐
-│     MS-Auditoría - Main Thread                 │
-│  - Consume eventos de Kafka                    │
-│  - Coordina workers                            │
-│  - Responde queries GraphQL                    │
-└────────────┬───────────────────────────────────┘
-             │ Delega procesamiento
-             │
-    ┌────────┼─────────┬──────────┬──────────┐
-    │        │         │          │          │
-┌───▼────┐ ┌▼────────┐ ┌▼────────┐ ┌▼────────┐
-│Worker 1│ │Worker 2 │ │Worker 3 │ │Worker 4 │
-│        │ │         │ │         │ │         │
-│GeoIP   │ │Risk     │ │Anomaly  │ │Compliance│
-│Lookup  │ │Scoring  │ │Detection│ │Checks    │
-└────┬───┘ └────┬────┘ └────┬────┘ └────┬─────┘
-     │          │           │           │
-     └──────────┼───────────┼───────────┘
-                │ Eventos enriquecidos
-                ▼
-        ┌───────────────┐
-        │ Elasticsearch │
-        │  + PostgreSQL │
-        └───────────────┘
+        <pre class="mermaid">
+flowchart LR
+    %% 1. Definición de Nodos con Iconos
+    main["fa:fa-sitemap MS-Auditoría - Main Thread<br/>
+      - Coordina y consume<br/>
+      - Responde a GraphQL"]
+    
+    subgraph "⚙️ Worker Pool"
+        direction TB
+        w1["Worker1: GeoIP Lookup"]
+        w2["Worker2: Risk Scoring"]
+        w3["Worker3:&nbsp;Anomaly&nbsp;Detection"]
+        w4["Worker4:&nbsp;Compliance&nbsp;Checks"]
+    end
+
+    db["fa:fa-database Almacenamiento<br/>
+    Elasticsearch<br/>
+    + PostgreSQL"]
+
+    %% 2. Conexiones con diferentes estilos
+    main -.->|Delega Tarea| w1
+    main -.->|Delega Tarea| w2
+    main -.->|Delega Tarea| w3
+    main -.->|Delega Tarea| w4
+    
+    w1 & w2 & w3 & w4 -- "Eventos Enriquecidos" --> db
+    
+    %% 3. Estilos
+    classDef level1 fill:#EBF5FB,stroke:#85C1E9,stroke-width:2px,rx:10,ry:10
+    classDef level2 fill:#F4ECF7,stroke:#D7BDE2,stroke-width:2px,rx:10,ry:10
+    classDef level3 fill:#FEF9E7,stroke:#FAD7A0,stroke-width:2px,rx:10,ry:10
+
+    %% 4. Asignación de Estilos
+    class main level1
+    class w1,w2,w3,w4 level2
+    class db level3
         </pre>
       </div>
 
@@ -642,35 +674,51 @@ function ComplianceDashboard() {
 
       <div class="diagram">
         <div class="diagram-title">Ciclo de Vida de Datos de Auditoría</div>
-        <pre>
-Día 0-30: Elasticsearch (hot tier)
-  ├─► SSD storage
-  ├─► Búsquedas ultra-rápidas (&lt;50ms)
-  ├─► Consultas frecuentes
-  └─► Dashboards en tiempo real
+        <pre class="mermaid">
+flowchart TD
+    subgraph "Ciclo de Vida del Dato"
+        direction LR
 
-Día 31-365: Elasticsearch (warm tier)
-  ├─► HDD storage
-  ├─► Búsquedas rápidas (&lt;200ms)
-  ├─► Consultas ocasionales
-  └─► Reportes mensuales
+        tier_hot_data("Días 0-30"):::level_hot
+        hot_es["fa:fa-fire&nbsp;&nbsp;<strong>Elasticsearch Hot</strong><br/>SSD | &lt;50ms | Alto Costo<br/>Consultas Frecuentes, Dashboards"]:::level_hot_data
 
-Año 1-3: S3 Standard
-  ├─► Búsquedas por batch
-  ├─► Restore en minutos
-  ├─► Costo medio
-  └─► Auditorías anuales
+        tier_warm_data("Días 31-365"):::level_warm
+        warm_es["fa:fa-thermometer-half&nbsp;&nbsp;<strong>Elasticsearch Warm</strong><br/>HDD | &lt;200ms | Medio Costo<br/>Consultas Ocasionales, Reportes Mensuales"]:::level_warm_data
 
-Año 3-7: S3 Glacier
-  ├─► Búsquedas por batch (horas)
-  ├─► Restore en 3-5 horas
-  ├─► Costo bajo
-  └─► Solo para compliance
+        tier_s3_standard_data("Años 1-3"):::level_cold
+        s3_standard["fa:fa-snowflake&nbsp;&nbsp;<strong>Amazon S3 Standard</strong><br/>Blob | Minutos Restore | Costo Medio<br/>Auditorías Anuales"]:::level_cold_data
 
-Año 7-10: S3 Glacier Deep Archive
-  ├─► Recuperación en 12-48 horas
-  ├─► Costo mínimo (90% ahorro)
-  └─► Solo para legal/auditorías externas
+        tier_glacier_data("Años 3-7"):::level_frozen
+        s3_glacier["fa:fa-ice-cream&nbsp;&nbsp;<strong>Amazon S3 Glacier</strong><br/>Archival | 3-5h Restore | Bajo Costo<br/>Solo Compliance"]:::level_frozen_data
+
+        tier_deep_archive_data("Años 7-10"):::level_archive
+        s3_deep_archive["fa:fa-box-open&nbsp;&nbsp;<strong>S3 Glacier Deep Archive</strong><br/>Deep Archival | 12-48h Restore | Mínimo Costo<br/>Legal / Auditorías Externas"]:::level_archive_data
+    end
+
+    %% Conexiones y transiciones
+    tier_hot_data --> hot_es
+    hot_es -- "Después de 30 días" --> tier_warm_data
+    tier_warm_data --> warm_es
+    warm_es -- "Después de 365 días" --> tier_s3_standard_data
+    tier_s3_standard_data --> s3_standard
+    s3_standard -- "Después de 3 años" --> tier_glacier_data
+    tier_glacier_data --> s3_glacier
+    s3_glacier -- "Después de 7 años" --> tier_deep_archive_data
+    tier_deep_archive_data --> s3_deep_archive
+
+    %% Estilos de los nodos
+    classDef level_hot fill:#EBF5FB,stroke:#85C1E9,stroke-width:2px,rx:8,ry:8,color:#222;
+    classDef level_warm fill:#E8F8F5,stroke:#76D7C4,stroke-width:2px,rx:8,ry:8,color:#222;
+    classDef level_cold fill:#FEF9E7,stroke:#FAD7A0,stroke-width:2px,rx:8,ry:8,color:#222;
+    classDef level_frozen fill:#F4ECF7,stroke:#D7BDE2,stroke-width:2px,rx:8,ry:8,color:#222;
+    classDef level_archive fill:#FDEDEC,stroke:#F5B7B1,stroke-width:2px,rx:8,ry:8,color:#222;
+
+    %% Estilos de los nodos de datos (más prominentes)
+    classDef level_hot_data fill:#D6EEF9,stroke:#5DA6D9,stroke-width:3px,rx:12,ry:12,color:#111,font-size:14px;
+    classDef level_warm_data fill:#D2F3EE,stroke:#4DC4AC,stroke-width:3px,rx:12,ry:12,color:#111,font-size:14px;
+    classDef level_cold_data fill:#FCF3DA,stroke:#E9B87F,stroke-width:3px,rx:12,ry:12,color:#111,font-size:14px;
+    classDef level_frozen_data fill:#EAD7EE,stroke:#C08BD1,stroke-width:3px,rx:12,ry:12,color:#111,font-size:14px;
+    classDef level_archive_data fill:#FBCAC8,stroke:#ED8581,stroke-width:3px,rx:12,ry:12,color:#111,font-size:14px;
         </pre>
       </div>
 
@@ -921,5 +969,9 @@ Año 7-10: S3 Glacier Deep Archive
     <div class="footer">
       <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 5 de 17</p>
     </div>
+
+    <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>

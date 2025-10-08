@@ -116,25 +116,29 @@
 
       <div class="diagram">
         <div class="diagram-title">Arquitectura con Worker Threads</div>
-        <pre>
-┌────────────────────────────────────────────────────────┐
-│         Main Thread (Event Loop)                       │
-│  - Recibe requests HTTP/GraphQL                        │
-│  - Coordina workers (no bloqueante)                    │
-│  - Gestiona I/O asíncrono (DB, APIs)                   │
-│  - Responde a clientes                                 │
-└────────────┬───────────────────────────────────────────┘
-             │
-             │ Delega tareas CPU-intensive
-             │
-    ┌────────┼─────────┬──────────┬──────────┐
-    │        │         │          │          │
-┌───▼────┐ ┌▼────────┐ ┌▼────────┐ ┌▼────────┐
-│Worker 1│ │Worker 2 │ │Worker 3 │ │Worker 4 │
-│        │ │         │ │         │ │         │
-│Agregac.│ │Reportes │ │OCR Doc  │ │ML       │
-│SQL     │ │PDF Gen  │ │Biometría│ │Scoring  │
-└────────┘ └─────────┘ └─────────┘ └─────────┘
+        <pre class="mermaid">
+graph TB
+    MAIN[Main Thread - Event Loop
+    •&nbsp;Recibe&nbsp;requests&nbsp;HTTP/GraphQL<br/>
+    •&nbsp;Coordina&nbsp;workers&nbsp;no&nbsp;bloqueante<br/>
+    •&nbsp;Gestiona&nbsp;I/O&nbsp;asíncrono&nbsp;DB,&nbsp;APIs<br/>
+    •&nbsp;Responde&nbsp;a&nbsp;clientes]
+    
+    W1[Worker 1&nbsp;Agregaciones SQL]
+    W2[Worker 2&nbsp;Reportes PDF Gen]
+    W3[Worker 3&nbsp;OCR DocBiometría]
+    W4[Worker 4&nbsp;ML Scoring]
+    
+    MAIN -->|Delega tareas<br/>CPU-intensive| W1
+    MAIN -->|Delega tareas<br/>CPU-intensive| W2
+    MAIN -->|Delega tareas<br/>CPU-intensive| W3
+    MAIN -->|Delega tareas<br/>CPU-intensive| W4
+    
+    style MAIN fill:#667eea,stroke:#333,color:#fff,stroke-width:3px
+    style W1 fill:#4caf50,stroke:#333,color:#fff
+    style W2 fill:#4caf50,stroke:#333,color:#fff
+    style W3 fill:#4caf50,stroke:#333,color:#fff
+    style W4 fill:#4caf50,stroke:#333,color:#fff
         </pre>
       </div>
 
@@ -400,39 +404,59 @@ todas las vistas que lo usen se actualizan automáticamente.
 
     <div class="diagram">
       <div class="diagram-title">Arquitectura Completa de Microservicios</div>
-      <pre>
-                    ┌─────────────────────────┐
-                    │   APOLLO GATEWAY        │
-                    │   (GraphQL Federation)  │
-                    │   - Schema Stitching    │
-                    └───────────┬─────────────┘
-                                │
-        ┌───────────────────────┼───────────────────────┐
-        │                       │                       │
-┌───────▼────────┐    ┌─────────▼──────┐    ┌──────────▼─────────┐
-│ MS-Históricos  │    │ MS-Pagos       │    │ MS-Autenticación   │
-│ (GraphQL)      │    │ (GraphQL)      │    │ (REST)             │
-│ - Subgraph     │    │ - Subgraph     │    │ - POST /login      │
-│ - Query        │    │ - Mutation     │    │ - OAuth 2.0        │
-│ - Worker Pool  │    │ - SAGA Pattern │    └────────────────────┘
-└───────┬────────┘    └─────────┬──────┘
-        │                       │
-        └───────────────────────┼───────────────────────┘
-                                │
-                    ┌───────────▼────────────┐
-                    │   KAFKA EVENT BUS      │
-                    │ - saga.orchestration   │
-                    │ - transactions.created │
-                    │ - audit.events         │
-                    └───────────┬────────────┘
-                                │
-        ┌───────────────────────┼───────────────────────┐
-        │                       │                       │
-┌───────▼────────┐    ┌─────────▼──────┐    ┌──────────▼─────────┐
-│ MS-Auditoría   │    │ MS-Notificaciones│  │ MS-Datos-Cliente   │
-│ (GraphQL)      │    │ (GraphQL)        │  │ (GraphQL)          │
-│ - Subscription │    │ - Worker Pool    │  │ - DataLoader       │
-└────────────────┘    └──────────────────┘  └────────────────────┘
+      <pre class="mermaid">
+       graph TB
+    GATEWAY[APOLLO GATEWAY&nbsp;GraphQL Federation<br/>
+    •&nbsp;Schema Stitching]
+    
+    subgraph "CAPA&nbsp;DE&nbsp;SERVICIOS&nbsp;FRONTEND"
+        MS1[MS-Históricos<br/>GraphQL<br/>
+        •&nbsp;Subgraph
+        •&nbsp;Query
+        •&nbsp;Worker Pool]
+        MS2[MS-Pagos<br/>GraphQL<br/>
+        •&nbsp;Subgraph<br/>
+        •&nbsp;Mutation<br/>
+        •&nbsp;SAGA Pattern]
+        MS3[MS-Autenticación<br/>REST<br/>
+        •&nbsp;POST /login<br/>
+        •&nbsp;OAuth 2.0]
+    end
+    
+    KAFKA[KAFKA EVENT BUS<br/>
+    •&nbsp;saga.orchestration<br/>
+    •&nbsp;transactions.created<br/>
+    •&nbsp;audit.events]
+    
+    subgraph "CAPA&nbsp;DE&nbsp;SERVICIOS&nbsp;BACKEND"
+        MS4[MS-Auditoría<br/>GraphQL<br/>
+        •&nbsp;Subscription]
+        MS5[MS-Notificaciones<br/>GraphQL<br/>
+        •&nbsp;Worker Pool]
+        MS6[MS-Datos-Cliente<br/>GraphQL<br/>
+        •&nbsp;DataLoader]
+    end
+    
+    GATEWAY --> MS1
+    GATEWAY --> MS2
+    GATEWAY --> MS3
+    
+    MS1 --> KAFKA
+    MS2 --> KAFKA
+    MS3 --> KAFKA
+    
+    KAFKA --> MS4
+    KAFKA --> MS5
+    KAFKA --> MS6
+    
+    style GATEWAY fill:#667eea,stroke:#333,color:#fff,stroke-width:3px
+    style KAFKA fill:#764ba2,stroke:#333,color:#fff,stroke-width:3px
+    style MS1 fill:#4caf50,stroke:#333,color:#fff
+    style MS2 fill:#4caf50,stroke:#333,color:#fff
+    style MS3 fill:#ff9800,stroke:#333,color:#fff
+    style MS4 fill:#2196F3,stroke:#333,color:#fff
+    style MS5 fill:#2196F3,stroke:#333,color:#fff
+    style MS6 fill:#2196F3,stroke:#333,color:#fff
     </pre
       >
     </div>
@@ -467,52 +491,66 @@ todas las vistas que lo usen se actualizan automáticamente.
 
       <div class="diagram">
         <div class="diagram-title">Arquitectura SAGA</div>
-        <pre>
-┌────────────────────────────────────────────────────────────┐
-│                  SAGA ORCHESTRATOR                         │
-│              (MS-Pagos-Interbancarios)                     │
-│                                                            │
-│  Estado en Redis (TTL: 1 hora):                            │
-│  {                                                         │
-│    sagaId: "saga-12345",                                   │
-│    status: "IN_PROGRESS",                                  │
-│    steps: [                                                │
-│      { name: "validateBalance", status: "COMPLETED" },     │
-│      { name: "debitAccount", status: "COMPLETED" },        │
-│      { name: "sendToACH", status: "FAILED" }              │
-│    ],                                                      │
-│    compensations: ["creditAccount", "releaseHold"],        │
-│    tempData: { originalBalance: 50000, holdAmount: 10000 }│
-│  }                                                         │
-└────────────────────────────────────────────────────────────┘
-                         │
-                         ▼ Emit Events
-              ┌─────────────────────┐
-              │   KAFKA TOPIC       │
-              │  saga.orchestration │
-              └──────────┬──────────┘
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-┌───────▼────────┐ ┌─────▼──────┐ ┌──────▼─────────┐
-│ debit.account  │ │ audit.log  │ │ send.to.ach    │
-└───────┬────────┘ └─────┬──────┘ └──────┬─────────┘
-        │                │                │
-        │                │                ▼
-        │                │         [ACH FALLA]
-        │                │                │
-        └────────────────┼────────────────┘
-                         ▼
-              ┌─────────────────────┐
-              │   KAFKA TOPIC       │
-              │  saga.compensation  │
-              └──────────┬──────────┘
-                         │
-        ┌────────────────┼────────────────┐
-┌───────▼────────┐ ┌─────▼──────┐ ┌──────▼─────────┐
-│ credit.account │ │ delete.log │ │ notify.failure │
-│ (Compensate)   │ │ (Compensate)│ │ (Compensate)   │
-└────────────────┘ └────────────┘ └────────────────┘
+        <pre class="mermaid">
+        graph TB
+          SAGA[SAGA&nbsp;ORCHESTRATOR<br/>
+          MS-Pagos-Interbancarios<br/><br/>
+          Estado en Redis TTL: 1h<br/>
+          sagaId: saga-12345<br/>
+          status: IN_PROGRESS<br/>
+          steps:<br/> 
+          &nbsp;&nbsp;validateBalance ✓<br/>
+          &nbsp;&nbsp;debitAccount ✓<br/>
+          &nbsp;&nbsp;sendToACH ✗ FAILED<br/>
+          compensations:
+          &nbsp;&nbsp;creditAccount,
+          &nbsp;&nbsp;releaseHold]
+    
+          KAFKA1[KAFKATOPIC<br/>
+          saga.orchestration]
+          
+          subgraph "EVENTOS PRINCIPALES"
+              E1[debit.account]
+              E2[audit.log]
+              E3[send.to.ach]
+          end
+    
+    FAIL[ACH FALLA ✗]
+    
+    KAFKA2[KAFKA TOPIC<br/>
+    saga.compensation]
+    
+    subgraph "COMPENSACIONES"
+        C1[credit.account<br/>Compensate]
+        C2[delete.log<br/>Compensate]
+        C3[notify.failure<br/>Compensate]
+    end
+    
+    SAGA -->|Emit Events| KAFKA1
+    KAFKA1 --> E1
+    KAFKA1 --> E2
+    KAFKA1 --> E3
+    
+    E3 --> FAIL
+    
+    E1 --> KAFKA2
+    E2 --> KAFKA2
+    FAIL --> KAFKA2
+    
+    KAFKA2 --> C1
+    KAFKA2 --> C2
+    KAFKA2 --> C3
+    
+    style SAGA fill:#667eea,stroke:#333,color:#fff,stroke-width:3px
+    style KAFKA1 fill:#764ba2,stroke:#333,color:#fff
+    style KAFKA2 fill:#764ba2,stroke:#333,color:#fff
+    style E1 fill:#4caf50,stroke:#333,color:#fff
+    style E2 fill:#4caf50,stroke:#333,color:#fff
+    style E3 fill:#4caf50,stroke:#333,color:#fff
+    style FAIL fill:#f44336,stroke:#333,color:#fff,stroke-width:3px
+    style C1 fill:#ff9800,stroke:#333,color:#fff
+    style C2 fill:#ff9800,stroke:#333,color:#fff
+    style C3 fill:#ff9800,stroke:#333,color:#fff
         </pre>
       </div>
 
@@ -699,5 +737,9 @@ todas las vistas que lo usen se actualizan automáticamente.
     <div class="footer">
       <p>Propuesta de Arquitectura - Sistema Bancario BP | Capítulo 3 de 17</p>
     </div>
+
+        <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
   </body>
 </html>
