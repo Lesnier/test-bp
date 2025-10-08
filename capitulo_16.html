@@ -440,6 +440,18 @@ gantt
     <div class="section">
       <h3>16.3.2 Priorización de Inversiones</h3>
 
+      <p>
+        La siguiente tabla detalla las inversiones recomendadas para la
+        implementación exitosa de la arquitectura propuesta, priorizadas por
+        impacto y retorno de inversión (ROI).
+      </p>
+
+      <p class="note">
+        Muchos de estos costes se pueden sustituir con recursos internos y
+        plataformas gratuitas o de bajo coste, existentes en repositorio docker
+        como Vault, ELK, Prometheus, Grafana, GitTea, etc.
+      </p>
+
       <table>
         <thead>
           <tr>
@@ -509,6 +521,478 @@ gantt
         $1,873 (optimizado)<br />
         <strong>ROI promedio:</strong> 350% a 24 meses<br />
         <strong>Break-even point:</strong> 18 meses
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>16.3.3 Opción de Inversión Híbrida Recomendada (Mercado Ecuador)</h3>
+
+      <p>
+        Para dismiunuir costes y optimizar la inversion se recomienda apoyarse
+        en herramientas Open Source self-hosting y manejadas.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Componente</th>
+            <th>Solución Open Source</th>
+            <th>Costo Setup</th>
+            <th>Costo Mensual</th>
+            <th>Prioridad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>1. Infraestructura Base</strong></td>
+            <td>
+              🔹 VPS/Bare Metal (2 servidores)<br />
+              🔹 Kubernetes: k3s o MicroK8s<br />
+              🔹 Load Balancer: NGINX/HAProxy
+            </td>
+            <td>$800</td>
+            <td>$120/mes<br /><small>(VPS: $60 x 2 servidores)</small></td>
+            <td class="pros">Crítica</td>
+          </tr>
+          <tr>
+            <td><strong>2. CI/CD</strong></td>
+            <td>
+              🔹 Gitea (GitHub alternative)<br />
+              🔹 Drone CI / Jenkins<br />
+              🔹 Harbor (Container Registry)<br />
+              🔹 ArgoCD (GitOps)
+            </td>
+            <td>$500</td>
+            <td>$40/mes<br /><small>(storage adicional)</small></td>
+            <td class="pros">Crítica</td>
+          </tr>
+          <tr>
+            <td><strong>3. Monitoreo</strong></td>
+            <td>
+              🔹 Prometheus (métricas) - FREE<br />
+              🔹 Grafana (dashboards) - FREE<br />
+              🔹 Loki (logs) - FREE<br />
+              🔹 Alertmanager - FREE
+            </td>
+            <td>$300</td>
+            <td>$30/mes<br /><small>(storage logs)</small></td>
+            <td class="pros">Crítica</td>
+          </tr>
+          <tr>
+            <td><strong>4. Logging</strong></td>
+            <td>
+              🔹 Loki + Promtail (lightweight ELK)<br />
+              <strong>O</strong><br />
+              🔹 ELK Stack self-hosted<br />
+              (Elasticsearch, Logstash, Kibana)
+            </td>
+            <td>$400</td>
+            <td>$50/mes<br /><small>(storage logs)</small></td>
+            <td class="pros">Crítica</td>
+          </tr>
+          <tr>
+            <td><strong>5. Secrets Management</strong></td>
+            <td>
+              🔹 HashiCorp Vault (open source)<br />
+              <strong>O</strong><br />
+              🔹 Sealed Secrets (Kubernetes native)<br />
+              🔹 External Secrets Operator
+            </td>
+            <td>$200</td>
+            <td>$0/mes<br /><small>(100% free)</small></td>
+            <td class="pros">Crítica</td>
+          </tr>
+          <tr>
+            <td><strong>6. Bases de Datos</strong></td>
+            <td>
+              🔹 PostgreSQL (self-hosted)<br />
+              🔹 Redis (self-hosted)<br />
+              🔹 MongoDB Community<br />
+              🔹 Patroni (HA PostgreSQL)
+            </td>
+            <td>$600</td>
+            <td>$80/mes<br /><small>(storage + backups S3)</small></td>
+            <td class="pros">Crítica</td>
+          </tr>
+          <tr>
+            <td><strong>7. Message Queue</strong></td>
+            <td>
+              🔹 Apache Kafka + Zookeeper<br />
+              <strong>O</strong><br />
+              🔹 RabbitMQ (más ligero)<br />
+              🔹 NATS (ultra ligero)
+            </td>
+            <td>$300</td>
+            <td>$40/mes<br /><small>(storage mensajes)</small></td>
+            <td>Alta</td>
+          </tr>
+          <tr>
+            <td><strong>8. API Gateway</strong></td>
+            <td>
+              🔹 Kong Gateway (open source)<br />
+              🔹 Traefik<br />
+              🔹 NGINX + Lua<br />
+              🔹 Tyk (community edition)
+            </td>
+            <td>$200</td>
+            <td>$0/mes<br /><small>(incluido en infra)</small></td>
+            <td>Alta</td>
+          </tr>
+          <tr>
+            <td><strong>9. Service Mesh</strong></td>
+            <td>
+              🔹 Istio (open source) - FREE<br />
+              🔹 Linkerd (más ligero) - FREE<br />
+              🔹 Consul Connect - FREE
+            </td>
+            <td>$400</td>
+            <td>$0/mes<br /><small>(overhead CPU incluido)</small></td>
+            <td class="media">Media</td>
+          </tr>
+          <tr>
+            <td><strong>10. APM & Tracing</strong></td>
+            <td>
+              🔹 Jaeger (distributed tracing)<br />
+              🔹 Zipkin<br />
+              🔹 Grafana Tempo
+            </td>
+            <td>$200</td>
+            <td>$20/mes<br /><small>(storage traces)</small></td>
+            <td>Alta</td>
+          </tr>
+          <tr>
+            <td><strong>11. Backups</strong></td>
+            <td>
+              🔹 Velero (K8s backups)<br />
+              🔹 Restic (encrypted backups)<br />
+              🔹 Storage: Backblaze B2 / Wasabi
+            </td>
+            <td>$200</td>
+            <td>$60/mes<br /><small>(100GB backup storage)</small></td>
+            <td class="pros">Crítica</td>
+          </tr>
+          <tr>
+            <td><strong>12. CDN (opcional)</strong></td>
+            <td>
+              🔹 Cloudflare (free tier)<br />
+              🔹 BunnyCDN ($1/TB)<br />
+              <strong>O</strong><br />
+              🔹 NGINX caching layer
+            </td>
+            <td>$100</td>
+            <td>$30/mes<br /><small>(bajo tráfico)</small></td>
+            <td class="cons">Opcional</td>
+          </tr>
+          <tr>
+            <td><strong>13. Seguridad</strong></td>
+            <td>
+              🔹 Falco (runtime security)<br />
+              🔹 Trivy (vulnerability scanner)<br />
+              🔹 OPA (policy engine)<br />
+              🔹 Cert-Manager + Let's Encrypt
+            </td>
+            <td>$300</td>
+            <td>$0/mes<br /><small>(todo open source)</small></td>
+            <td class="pros">Crítica</td>
+          </tr>
+          <tr>
+            <td><strong>14. Capacitación Equipo</strong></td>
+            <td>
+              🔹 Cursos online (Udemy, Platzi)<br />
+              🔹 Documentación oficial<br />
+              🔹 Workshops internos<br />
+              🔹 1 consultor senior (3 meses)
+            </td>
+            <td>$8,000</td>
+            <td>-<br /><small>(one-time)</small></td>
+            <td class="pros">Crítica</td>
+          </tr>
+          <tr>
+            <td><strong>15. Consultoría Externa</strong></td>
+            <td>
+              🔹 1 Arquitecto Senior (3 meses)<br />
+              🔹 Salario Ecuador: $3,500/mes<br />
+              🔹 Setup inicial + mentoring
+            </td>
+            <td>$10,500</td>
+            <td>-<br /><small>(primeros 3 meses)</small></td>
+            <td>Alta</td>
+          </tr>
+          <tr>
+            <td><strong>16. Contingencia</strong></td>
+            <td>
+              🔹 Imprevistos<br />
+              🔹 Hardware adicional<br />
+              🔹 Licencias emergentes
+            </td>
+            <td>$2,000</td>
+            <td>$100/mes<br /><small>(fondo reserva)</small></td>
+            <td class="media">Media</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note">
+        <strong>💵 RESUMEN FINANCIERO - Opción Híbrida:</strong><br />
+        <strong>Inversión inicial total:</strong> $18,500 (vs $113,000 cloud
+        completo = <strong>84% ahorro</strong>)<br />
+        <strong>Costo operacional mensual:</strong> $890/mes (vs $4,500/mes =
+        <strong>80% ahorro</strong>)<br />
+        <strong>Costo anual total:</strong> $29,180 (setup + 12 meses
+        operación)<br />
+        <strong>ROI promedio:</strong> 450% a 18 meses<br />
+        <strong>Break-even point:</strong> 12 meses
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>16.3.4 Herramientas Open Source Recomendadas (todas gratuitas)</h3>
+
+      <p>
+        Para dismiunuir costes y optimizar la inversion se recomienda apoyarse
+        en herramientas Open Source self-hosting y manejadas.
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th>Herramienta</th>
+            <th>Descripción</th>
+            <th>Equivalente Paid</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Code Repository</strong></td>
+            <td>Gitea / GitLab CE</td>
+            <td>Git hosting completo, CI/CD integrado</td>
+            <td>GitHub Enterprise ($21/user/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>CI/CD</strong></td>
+            <td>Drone CI / Jenkins</td>
+            <td>Pipelines automatizados, plugins</td>
+            <td>GitLab Premium ($29/user/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>Container Registry</strong></td>
+            <td>Harbor</td>
+            <td>Registry seguro, scanning de vulnerabilidades</td>
+            <td>Docker Hub Pro ($7/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>Kubernetes</strong></td>
+            <td>k3s / MicroK8s</td>
+            <td>Kubernetes lightweight, fácil setup</td>
+            <td>AWS EKS ($73/mes control plane)</td>
+          </tr>
+          <tr>
+            <td><strong>Monitoring</strong></td>
+            <td>Prometheus + Grafana</td>
+            <td>Métricas, alertas, dashboards</td>
+            <td>Datadog ($15/host/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>Logging</strong></td>
+            <td>Loki + Promtail</td>
+            <td>Logs centralizados, lightweight</td>
+            <td>Splunk ($150/GB/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>APM</strong></td>
+            <td>Jaeger / Zipkin</td>
+            <td>Distributed tracing, performance</td>
+            <td>New Relic ($25/user/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>Secrets</strong></td>
+            <td>Vault / Sealed Secrets</td>
+            <td>Gestión segura de secretos</td>
+            <td>AWS Secrets Manager ($0.40/secret/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>Load Balancer</strong></td>
+            <td>NGINX / HAProxy / Traefik</td>
+            <td>L7 load balancing, SSL termination</td>
+            <td>AWS ALB ($22/mes + $0.008/LCU)</td>
+          </tr>
+          <tr>
+            <td><strong>Service Mesh</strong></td>
+            <td>Istio / Linkerd</td>
+            <td>Traffic management, observability</td>
+            <td>Consul Enterprise ($2,950/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>GitOps</strong></td>
+            <td>ArgoCD / Flux</td>
+            <td>Continuous deployment, sync K8s</td>
+            <td>Harness ($2,000/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>Security Scanning</strong></td>
+            <td>Trivy / Clair</td>
+            <td>Vulnerability scanning de containers</td>
+            <td>Snyk ($98/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>Policy Engine</strong></td>
+            <td>OPA (Open Policy Agent)</td>
+            <td>Policy as code, compliance</td>
+            <td>Styra DAS ($500/mes)</td>
+          </tr>
+          <tr>
+            <td><strong>Backup K8s</strong></td>
+            <td>Velero</td>
+            <td>Backup y restore de clusters K8s</td>
+            <td>Kasten K10 ($1,000+/año)</td>
+          </tr>
+          <tr>
+            <td><strong>Certificate Mgmt</strong></td>
+            <td>Cert-Manager + Let's Encrypt</td>
+            <td>SSL/TLS automático, renovación</td>
+            <td>DigiCert ($295/año/cert)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="warning">
+        <strong>⚠️ Consideraciones Importantes:</strong>
+        <ul>
+          <li>
+            <strong>Expertise requerido:</strong> El equipo necesita
+            capacitación en estas herramientas (incluido en presupuesto)
+          </li>
+          <li>
+            <strong>Tiempo de setup:</strong> 2-3 meses vs 1 mes con soluciones
+            managed
+          </li>
+          <li>
+            <strong>Mantenimiento:</strong> Requiere 1 DevOps dedicado (salario
+            incluido en costo operacional)
+          </li>
+          <li>
+            <strong>Escalabilidad:</strong> Agregar servidores cuando sea
+            necesario (crecimiento gradual)
+          </li>
+          <li>
+            <strong>Support:</strong> Community support (foros, GitHub issues)
+            en lugar de support 24/7 paid
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>16.3.5 📊 Comparativa Final: Cloud vs Self-Hosted</h3>
+      <p>
+        A continuación se presenta una tabla comparativa entre la opción de
+        infraestructura cloud completa (AWS) y la opción híbrida recomendada
+        (self-hosted con herramientas open source).
+      </p>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Concepto</th>
+            <th>Cloud Completo (AWS)</th>
+            <th>Híbrido (Recomendado)</th>
+            <th>100% Self-Hosted</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Setup Inicial</strong></td>
+            <td>$113,000</td>
+            <td>$18,500</td>
+            <td>$12,000</td>
+          </tr>
+          <tr>
+            <td><strong>Mes 1-6 (operación)</strong></td>
+            <td>$4,500/mes</td>
+            <td>$890/mes</td>
+            <td>$450/mes</td>
+          </tr>
+          <tr>
+            <td><strong>Mes 7+ (optimizado)</strong></td>
+            <td>$1,873/mes</td>
+            <td>$890/mes</td>
+            <td>$450/mes</td>
+          </tr>
+          <tr>
+            <td><strong>Costo Año 1</strong></td>
+            <td>$140,000</td>
+            <td>$29,180</td>
+            <td>$17,400</td>
+          </tr>
+          <tr>
+            <td><strong>Costo 3 Años</strong></td>
+            <td>$180,000</td>
+            <td>$50,580</td>
+            <td>$28,200</td>
+          </tr>
+          <tr>
+            <td><strong>Ahorro vs Cloud</strong></td>
+            <td>-</td>
+            <td class="pros">72% ahorro</td>
+            <td class="pros">84% ahorro</td>
+          </tr>
+          <tr>
+            <td><strong>Complejidad Setup</strong></td>
+            <td class="pros">Baja</td>
+            <td class="media">Media</td>
+            <td class="cons">Alta</td>
+          </tr>
+          <tr>
+            <td><strong>Mantenimiento</strong></td>
+            <td class="pros">Bajo</td>
+            <td class="media">Medio</td>
+            <td class="cons">Alto</td>
+          </tr>
+          <tr>
+            <td><strong>Escalabilidad</strong></td>
+            <td class="pros">Excelente</td>
+            <td class="pros">Buena</td>
+            <td class="media">Manual</td>
+          </tr>
+          <tr>
+            <td><strong>Support 24/7</strong></td>
+            <td class="pros">Incluido</td>
+            <td class="cons">Community</td>
+            <td class="cons">DIY</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="success">
+        <h3>🎯 RECOMENDACIÓN FINAL para Ecuador:</h3>
+        <strong>Opción Híbrida</strong> con herramientas open source
+        self-hosted<br /><br />
+
+        <strong>✅ Ventajas:</strong>
+        <ul>
+          <li>
+            💰 <strong>Ahorro del 72%</strong> vs solución cloud completa
+            ($129,420 en 3 años)
+          </li>
+          <li>
+            🔧 <strong>Control total</strong> sobre infraestructura y datos
+          </li>
+          <li>
+            📈 <strong>Escalable</strong> agregando servidores cuando sea
+            necesario
+          </li>
+          <li>
+            🛠️ <strong>No vendor lock-in</strong>, puedes migrar entre
+            proveedores
+          </li>
+          <li>
+            👥 <strong>Upskilling del equipo</strong> en tecnologías modernas
+          </li>
+          <li>
+            🌎 <strong>Independencia</strong> de servicios internacionales
+          </li>
+        </ul>
       </div>
     </div>
 
