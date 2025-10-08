@@ -224,15 +224,6 @@ propuesta-arquitectura-bp/
 6. **Kafka**: Throughput 1M+ msgs/seg, durabilidad, replay capability
 7. **ELK + Prometheus**: Observabilidad completa (logs + métricas + traces)
 
-## 💰 Resumen de Costos Estimados
-
-- **Infraestructura Cloud**: ~$2,000/mes optimizado
-- **Desarrollo MVP**: $120,000 (4 meses)
-- **Equipo Desarrollo**: $540,000 (3 años)
-- **Total 3 años**: ~$760,000 con React Native
-
-**Ahorro**: $430,000 vs Kotlin Multiplatform en 3 años
-
 ## 🔒 Seguridad y Compliance
 
 - ✅ OAuth 2.0 + JWT para autenticación
@@ -260,9 +251,9 @@ propuesta-arquitectura-bp/
 
 Para consultas sobre esta propuesta:
 
-- 📧 Email: [tu-email@ejemplo.com]
-- 🌐 Web: [test.keywordcv.com](https://test.keywordcv.com)
-- 📱 LinkedIn: [Tu perfil]
+- 📧 Email: lesniergonzalez@gmail.com
+- 🌐 Web: [Lesnier González López (Portal de Portafolio y Colaboraciones empresariales)](https://lesinnovations.tech)
+- 📱 LinkedIn: [Ver experiencia y Certificados](https://www.linkedin.com/in/lesnier-gonzalez/)
 
 ## 📝 Notas de Versión
 
@@ -274,12 +265,6 @@ Para consultas sobre esta propuesta:
 - ✅ Versión PDF disponible
 - ✅ Estimaciones de costos detalladas
 - ✅ Casos de uso del sector bancario
-
----
-
-## ⚖️ Licencia
-
-**Propietaria** - Documento confidencial para Sistema Bancario BP
 
 ---
 
