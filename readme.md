@@ -23,6 +23,123 @@ Propuesta técnica completa de arquitectura de software para un sistema bancario
 
 > 📄 Documento completo de 17 capítulos con todos los diagramas y tablas para lectura offline
 
+---
+
+## Diagramas de Arquitectura (Modelo C4)
+
+> **Modelo C4** - Context, Containers, Components, Code: Enfoque de "zoom" para documentar arquitecturas de software creado por Simon Brown. Más información en [c4model.info](https://c4model.info/)
+
+<div align="center">
+
+### Tres Niveles de Abstracción
+
+| Nivel          | Diagrama     | Audiencia               | Propósito                      |
+| -------------- | ------------ | ----------------------- | ------------------------------ |
+| **C4 Level 1** | Contexto     | Stakeholders, Gerencia  | Sistema en su entorno completo |
+| **C4 Level 2** | Contenedores | Arquitectos, Tech Leads | Aplicaciones y servicios       |
+| **C4 Level 3** | Componentes  | Desarrolladores         | Detalle interno y patrones     |
+
+</div>
+
+---
+
+### Diagrama 1: Contexto del Sistema (C4 Level 1)
+
+<div align="center">
+
+![Diagrama de Contexto](Diagrama_de_Contexto.png)
+
+</div>
+
+**Para:** Stakeholders no técnicos, gerencia, usuarios de negocio
+
+**Muestra:**
+
+- El Sistema Bancario BP en su entorno completo
+- Usuarios del sistema (clientes, empleados, administradores)
+- Sistemas externos con los que interactúa (ACH Network, servicios de email/SMS, Firebase, etc.)
+- Flujos de información principales entre el sistema y su entorno
+
+**Nivel de detalle:** Alto nivel, sin detalles técnicos de implementación
+
+---
+
+### Diagrama 2: Contenedores del Sistema (C4 Level 2)
+
+<div align="center">
+
+![Diagrama de Contenedores](Diagrama_de_Contenedores.png)
+
+</div>
+
+**Para:** Arquitectos de software, líderes técnicos, DevOps
+
+**Muestra:**
+
+- **Aplicaciones Frontend:** Web App (React.js) y Mobile App (React Native)
+- **API Gateway:** Kong/NGINX como punto de entrada único
+- **Microservicios:** MS-Autenticación, MS-Cuentas, MS-Pagos, MS-Históricos, MS-Notificaciones, MS-Auditoría
+- **Bases de Datos:** PostgreSQL (primary + replicas), MongoDB, Redis Cluster
+- **Mensajería:** Apache Kafka + Zookeeper
+- **Seguridad:** HashiCorp Vault para gestión de secretos
+- **Tecnologías y protocolos** de comunicación entre componentes
+
+**Nivel de detalle:** Arquitectura técnica de alto nivel con tecnologías específicas
+
+**Stack Tecnológico:**
+
+- **Frontend:** React Native, React.js, TypeScript, Redux Toolkit
+- **Backend:** Node.js, Express.js, GraphQL, REST APIs
+- **Databases:** PostgreSQL 15, MongoDB 6, Redis 7
+- **Messaging:** Apache Kafka, Zookeeper
+- **Security:** OAuth 2.0, JWT, HashiCorp Vault
+- **Gateway:** Kong Gateway, NGINX
+
+---
+
+### Diagrama 3: Componentes - Microservicio de Pagos (C4 Level 3)
+
+<div align="center">
+
+![Diagrama de Componentes](Diagama_de_Componentes.png)
+
+</div>
+
+**Para:** Desarrolladores, arquitectos que implementarán el sistema
+
+**Muestra:**
+
+- **Componentes internos** del MS-Pagos (ejemplo representativo)
+- **Controllers y APIs:** Payment API Controller, Auth Middleware
+- **Servicios de negocio:** Transfer Service, Fraud Detection
+- **Patrones implementados:** Circuit Breaker, Saga Orchestrator
+- **Repositorios:** Transaction Repository con acceso a datos
+- **Integraciones:** ACH Client, Event Publisher (Kafka)
+- **Seguridad:** Encryption Service, Audit Logger
+- **Protocolos específicos** y flujos de datos internos
+
+**Nivel de detalle:** Componentes internos, clases principales, patrones arquitectónicos
+
+**Patrones Arquitectónicos:**
+
+- **Circuit Breaker** - Protección contra fallos en cascada
+- **Saga Pattern** - Transacciones distribuidas con compensaciones
+- **Event Sourcing** - Publicación de eventos para auditoría
+- **Repository Pattern** - Abstracción del acceso a datos
+- **Middleware Pattern** - Autenticación y validación reutilizable
+
+**Seguridad Implementada:**
+
+- OAuth 2.0 + JWT para autenticación/autorización
+- TLS 1.3 en todas las comunicaciones
+- AES-256-GCM para cifrado de datos sensibles
+- SASL para autenticación en Kafka
+- Secret rotation automática desde Vault
+- Rate limiting y input validation
+- Audit logging completo para compliance
+
+---
+
 ## 📚 Índice de Capítulos
 
 ### [🏠 Inicio](https://test.keywordcv.com/index.html)

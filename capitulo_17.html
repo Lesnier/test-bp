@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Capítulo 16 - Diagramas C4 - Sistema Bancario BP</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.6.1/mermaid.min.js"></script>
+    
+    </style>
+  </head>
+  <body>
+     <div class="nav-header">
+      <h2>Capítulo 17: Anexo diagramas C4 Models</h2>
+      <div class="nav-buttons">
+        <a href="capitulo_15.html" class="nav-btn">← Anterior</a>
+        <a href="index.html" class="nav-btn">Índice</a>
+        <a href="capitulo_17.html" class="nav-btn">Siguiente →</a>
+      </div>
+    </div>
+    <h1>📐 Diagramas C4 - Sistema Bancario BP</h1>
+
+    <div class="info-box">
+      <strong>📚 Modelo C4 (Context, Containers, Components, Code)</strong>
+      <p>
+        El modelo C4 es un enfoque de "zoom" para documentar arquitecturas de
+        software, creado por Simon Brown. Proporciona diferentes niveles de
+        abstracción para diferentes audiencias:
+      </p>
+      <ul>
+        <li>
+          <strong>Nivel 1 - Contexto:</strong> Vista de alto nivel del sistema
+          en su entorno (para stakeholders no técnicos)
+        </li>
+        <li>
+          <strong>Nivel 2 - Contenedores:</strong> Aplicaciones y servicios que
+          componen el sistema (para técnicos)
+        </li>
+        <li>
+          <strong>Nivel 3 - Componentes:</strong> Componentes internos de un
+          contenedor específico (para desarrolladores)
+        </li>
+        <li>
+          <strong>Nivel 4 - Código:</strong> Implementación detallada (opcional,
+          no incluido aquí)
+        </li>
+      </ul>
+      <p>
+        🔗 Más información:
+        <a href="https://c4model.info/" target="_blank">c4model.info</a>
+      </p>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- DIAGRAMA 1: CONTEXTO (C4 Level 1) -->
+    <!-- ============================================ -->
+
+    <h2>📍 Diagrama 1: Contexto del Sistema (C4 Level 1)</h2>
+
+      <div class="section">
+        <strong>🎯 Audiencia:</strong> Stakeholders no técnicos, gerencia,
+        usuarios de negocio<br />
+        <strong>📋 Propósito:</strong> Mostrar el sistema en su entorno
+        completo, identificando usuarios y sistemas externos con los que
+        interactúa<br />
+        <strong>🔍 Nivel de detalle:</strong> Alto nivel, sin detalles técnicos
+        de implementación
+      </div>
+
+    <div class="diagram">
+      <div class="diagram-title">Contexto del Sistema Bancario BP</div>
+
+
+
+      <pre class="mermaid">
+flowchart TD
+    %% === TÍTULO PRINCIPAL ===
+    Title[<h2>🏦 Sistema Bancario BP</h2><br/>Diagrama de Contexto - Arquitectura del Sistema]
+
+    %% === USUARIOS DEL SISTEMA ===
+    subgraph Users[👥 Usuarios del Sistema]
+        direction LR
+        U1[👤<br/><b>Cliente Bancario</b><br/><small>Realiza operaciones bancarias<br/>vía web o app móvil</small>]
+        U2[👨‍💼<br/><b>Empleado del Banco</b><br/><small>Gestiona cuentas y aprueba<br/>transacciones</small>]
+        U3[👨‍💻<br/><b>Administrador</b><br/><small>Gestiona y monitorea<br/>la plataforma</small>]
+    end
+
+    %% === SISTEMA PRINCIPAL ===
+    BP[🏦<br/><b>Sistema Bancario BP</b><br/><small>Plataforma bancaria digital completa<br/>Gestión de cuentas, transferencias, pagos<br/>y consultas en tiempo real</small>]
+
+    %% === SISTEMAS EXTERNOS ORGANIZADOS ===
+    subgraph ExternalSystems[🔗 Sistemas Externos]
+        direction TB
+        
+        subgraph Comms[📧 Comunicaciones]
+            E1[📧<br/><b>Servicio de Email</b>]
+            E2[📱<br/><b>Proveedor SMS</b>]
+            E3[🔔<br/><b>Firebase FCM</b>]
+        end
+
+        subgraph Payments[💳 Pagos e Identidad]
+            E4[💸<br/><b>Red ACH</b>]
+            E5[💳<br/><b>Gateway de Pagos</b>]
+            E6[🆔<br/><b>Proveedor Identidad</b>]
+        end
+
+        subgraph Infra[🛠️ Infraestructura]
+            E7[☁️<br/><b>Almacenamiento Cloud</b>]
+            E8[📊<br/><b>Monitoreo</b>]
+        end
+    end
+
+    %% === CONEXIONES CON ETIQUETAS ===
+    U1 -->|Realiza operaciones bancarias<br/>Web & App Móvil<br/>HTTPS/WSS| BP
+    U2 -->|Gestiona operaciones<br/>Aprueba transacciones<br/>HTTPS| BP
+    U3 -->|Administra y monitorea<br/>el sistema<br/>HTTPS/SSH| BP
+
+    BP -->|Envía notificaciones<br/>por correo<br/>SMTP/API REST| E1
+    BP -->|Envía mensajes SMS<br/>y códigos OTP<br/>API REST| E2
+    BP -->|Envía notificaciones<br/>push móviles<br/>FCM API| E3
+    BP -->|Procesa transferencias<br/>interbancarias<br/>ISO 8583/SWIFT| E4
+    BP -->|Procesa pagos<br/>con tarjeta<br/>API REST/Webhooks| E5
+    BP -->|Verifica identidad<br/>de usuarios - KYC<br/>API REST| E6
+    BP -->|Almacena documentos<br/>y backups<br/>S3 API| E7
+    BP -->|Envía métricas<br/>y logs<br/>Prometheus/Loki| E8
+
+    %% === ESTILOS CON COLORES PASTEL ===
+    classDef title fill:#FCE4EC,stroke:#C2185B,stroke-width:2px,rx:15,ry:15
+    classDef users fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,rx:12,ry:12
+    classDef mainSystem fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,rx:12,ry:12
+    classDef external fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,rx:10,ry:10
+    classDef comms fill:#F3E5F5,stroke:#9C27B0,stroke-width:1px,rx:8,ry:8
+    classDef payments fill:#E0F2F1,stroke:#00897B,stroke-width:1px,rx:8,ry:8
+    classDef infra fill:#FFEBEE,stroke:#D32F2F,stroke-width:1px,rx:8,ry:8
+    classDef userItem fill:#FFFFFF,stroke:#4CAF50,stroke-width:1px,rx:8,ry:8
+    classDef externalItem fill:#FFFFFF,stroke:#666666,stroke-width:1px,rx:6,ry:6
+
+    %% APLICAR ESTILOS ===
+    class Title title
+    class Users users
+    class BP mainSystem
+    class ExternalSystems external
+    class Comms comms
+    class Payments payments
+    class Infra infra
+    class U1,U2,U3 userItem
+    class E1,E2,E3,E4,E5,E6,E7,E8 externalItem
+
+    %% ESTILOS DE LÍNEAS ===
+    linkStyle 0,1,2 stroke:#4CAF50,stroke-width:2px
+    linkStyle 3,4,5 stroke:#9C27B0,stroke-width:1.5px
+    linkStyle 6,7,8 stroke:#00897B,stroke-width:1.5px
+    linkStyle 9,10 stroke:#D32F2F,stroke-width:1.5px
+    </pre>
+
+      <div class="legend">
+        <h4>🔑 Leyenda del Diagrama de Contexto</h4>
+        <ul>
+          <li><strong>Person (Azul):</strong> Usuarios humanos del sistema</li>
+          <li>
+            <strong>System (Azul oscuro):</strong> El sistema que estamos
+            documentando
+          </li>
+          <li>
+            <strong>System_Ext (Gris):</strong> Sistemas externos fuera de
+            nuestro control
+          </li>
+          <li>
+            <strong>Rel (Flechas):</strong> Relaciones/interacciones entre
+            elementos
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- DIAGRAMA 2: CONTENEDORES (C4 Level 2) -->
+    <!-- ============================================ -->
+
+    <h2>📦 Diagrama 2: Contenedores del Sistema (C4 Level 2)</h2>
+
+   <div class="section">
+        <strong>🎯 Audiencia:</strong> Arquitectos de software, líderes
+        técnicos, DevOps<br />
+        <strong>📋 Propósito:</strong> Mostrar las aplicaciones y servicios que
+        componen el sistema, sus responsabilidades y tecnologías<br />
+        <strong>🔍 Nivel de detalle:</strong> Aplicaciones, bases de datos,
+        servicios, sin entrar en componentes internos
+      </div>
+
+    <div class="diagram">
+      <div class="diagram-title">
+        Arquitectura de Contenedores - Sistema Bancario BP
+      </div>
+
+      <pre class="mermaid">
+flowchart TD
+    %% === TÍTULO PRINCIPAL ===
+    Title[<h2>🏦 Sistema Bancario BP - Arquitectura de Contenedores</h2>]
+
+    %% === USUARIOS ===
+    subgraph Users[👥 Usuarios]
+        direction LR
+        U1[👤<br/><b>Cliente Bancario</b><br/><small>Accede desde web o móvil</small>]
+        U2[👨‍💼<br/><b>Empleado Banco</b><br/><small>Gestiona operaciones</small>]
+    end
+
+    %% === APLICACIONES CLIENTE ===
+    subgraph ClientApps[📱 Aplicaciones Cliente]
+        direction LR
+        A1[📱<br/><b>App Móvil</b><br/><small>React Native<br/>iOS/Android</small>]
+        A2[🌐<br/><b>App Web</b><br/><small>React.js + Vite<br/>SPA</small>]
+    end
+
+    %% === API GATEWAY ===
+    GW[🔌<br/><b>API Gateway</b><br/><small>Kong/NGINX + Node.js<br/>OAuth 2.0, Rate Limiting</small>]
+
+    %% === MICROSERVICIOS ACTUALIZADOS ===
+    subgraph Microservices[⚙️ Microservicios]
+        direction TB
+        
+        subgraph CoreBanking[💼 Servicios Bancarios Core]
+            M1[🔐<br/><b>MS-Autenticación</b><br/><small>Node.js + Passport.js<br/>:3005 REST</small>]
+            M2[👤<br/><b>MS-Datos-Cliente</b><br/><small>Node.js + GraphQL<br/>:3004 GraphQL</small>]
+            M3[💸<br/><b>MS-Pagos-Internos</b><br/><small>Node.js + GraphQL<br/>:3002 GraphQL</small>]
+            M4[🌐<br/><b>MS-Pagos-Interbancarios</b><br/><small>Node.js + GraphQL<br/>:3003 GraphQL + SAGA</small>]
+        end
+
+        subgraph DataServices[📊 Servicios de Datos]
+            M5[📈<br/><b>MS-Históricos</b><br/><small>Node.js + GraphQL<br/>:3001 GraphQL CQRS</small>]
+            M6[📝<br/><b>MS-Auditoría</b><br/><small>Node.js + GraphQL<br/>:3006 GraphQL + Worker Pool</small>]
+            M7[📢<br/><b>MS-Notificaciones</b><br/><small>Node.js + Bull Queue<br/>:3007 GraphQL + Workers</small>]
+            M8[📁<br/><b>MS-Archivos</b><br/><small>Node.js + Multer<br/>:3008 REST</small>]
+        end
+    end
+
+    %% === BASE DE DATOS ===
+    subgraph Databases[🗄️ Bases de Datos]
+        direction LR
+        DB1[🐘<br/><b>PostgreSQL<br/>Primary</b><br/><small>Cuentas, Transacciones</small>]
+        DB2[🐘<br/><b>PostgreSQL<br/>Replicas</b><br/><small>Lecturas, Consultas</small>]
+        DB3[🍃<br/><b>MongoDB</b><br/><small>Documentos, Históricos, Logs</small>]
+        DB4[🔴<br/><b>Redis Cluster</b><br/><small>Sesiones, Cache, Temporal</small>]
+        DB5[☁️<br/><b>Cloud Storage</b><br/><small>Archivos, Documentos</small>]
+    end
+
+    %% === INFRAESTRUCTURA ===
+    subgraph Infrastructure[🔄 Infraestructura]
+        direction LR
+        I1[📬<br/><b>Apache Kafka</b><br/><small>Event Streaming, CQRS</small>]
+        I2[🔑<br/><b>HashiCorp Vault</b><br/><small>Secrets, API Keys</small>]
+        I3[⚡<br/><b>Bull Queue</b><br/><small>Jobs, Workers</small>]
+    end
+
+    %% === SISTEMAS EXTERNOS ===
+    subgraph External[🌍 Sistemas Externos]
+        direction LR
+        E1[💳<br/><b>Red ACH</b><br/><small>Transferencias Interbancarias</small>]
+        E2[🔔<br/><b>Firebase</b><br/><small>Push Notifications</small>]
+        E3[📧<br/><b>Email/SMS</b><br/><small>SendGrid, Twilio</small>]
+    end
+
+    %% === CONEXIONES PRINCIPALES ===
+    Users --> ClientApps
+    ClientApps -->|HTTPS/REST/GraphQL| GW
+    GW -->|GraphQL Federation| Microservices
+
+    %% === CONEXIONES API GATEWAY A MICROSERVICIOS ===
+    GW -->|Autentica<br/>REST/gRPC| M1
+    GW -->|Consulta datos<br/>GraphQL| M2
+    GW -->|Transferencias internas<br/>GraphQL| M3
+    GW -->|Transferencias externas<br/>GraphQL| M4
+    GW -->|Consulta históricos<br/>GraphQL| M5
+    GW -->|Registro auditoría<br/>GraphQL| M6
+    GW -->|Envía notificaciones<br/>GraphQL| M7
+    GW -->|Gestiona archivos<br/>REST| M8
+
+    %% === CONEXIONES MICROSERVICIOS A DATOS ===
+    M1 -->|Usuarios/Sesiones<br/>SQL/TLS| DB1
+    M1 -->|Cache sesiones<br/>Redis Protocol| DB4
+    M1 -->|Secrets<br/>HTTPS/API| I2
+    
+    M2 -->|Datos cliente<br/>SQL/TLS| DB1
+    M2 -->|Cache consultas<br/>Redis Protocol| DB4
+    
+    M3 -->|Transacciones<br/>SQL/TLS| DB1
+    M3 -->|Eventos pagos<br/>Kafka Protocol| I1
+    
+    M4 -->|Transacciones<br/>SQL/TLS| DB1
+    M4 -->|SAGA Orchestration<br/>Kafka Protocol| I1
+    M4 -->|Transferencias ACH<br/>ISO 8583| E1
+    
+    M5 -->|Datos lectura<br/>SQL/TLS| DB2
+    M5 -->|Históricos<br/>MongoDB Protocol| DB3
+    
+    M6 -->|Consume eventos<br/>Kafka Protocol| I1
+    M6 -->|Logs auditoría<br/>MongoDB Protocol| DB3
+    
+    M7 -->|Jobs notificaciones<br/>Bull Queue| I3
+    M7 -->|Push notifications<br/>FCM API| E2
+    M7 -->|Email/SMS<br/>HTTPS/API| E3
+    
+    M8 -->|Metadatos<br/>MongoDB Protocol| DB3
+    M8 -->|Archivos<br/>Cloud Storage API| DB5
+    M8 -->|Cache archivos<br/>Redis Protocol| DB4
+
+    %% === ESTILOS CON COLORES PASTEL ===
+    classDef title fill:#FCE4EC,stroke:#C2185B,stroke-width:2px,rx:15,ry:15
+    classDef users fill:#E8F5E9,stroke:#4CAF50,stroke-width:2px,rx:12,ry:12
+    classDef clientApps fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,rx:12,ry:12
+    classDef gateway fill:#FFF3E0,stroke:#FF9800,stroke-width:2px,rx:12,ry:12
+    classDef microservices fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,rx:12,ry:12
+    classDef coreBanking fill:#E0F2F1,stroke:#00897B,stroke-width:1px,rx:10,ry:10
+    classDef dataServices fill:#FFEBEE,stroke:#D32F2F,stroke-width:1px,rx:10,ry:10
+    classDef databases fill:#FFF9C4,stroke:#FBC02D,stroke-width:2px,rx:12,ry:12
+    classDef infrastructure fill:#E8EAF6,stroke:#3F51B5,stroke-width:2px,rx:12,ry:12
+    classDef external fill:#F3E5F5,stroke:#7B1FA2,stroke-width:2px,rx:12,ry:12
+    classDef item fill:#FFFFFF,stroke:#666666,stroke-width:1px,rx:8,ry:8
+
+    %% APLICAR ESTILOS ===
+    class Title title
+    class Users users
+    class ClientApps clientApps
+    class GW gateway
+    class Microservices microservices
+    class CoreBanking coreBanking
+    class DataServices dataServices
+    class Databases databases
+    class Infrastructure infrastructure
+    class External external
+    class U1,U2,A1,A2,M1,M2,M3,M4,M5,M6,M7,M8,DB1,DB2,DB3,DB4,DB5,I1,I2,I3,E1,E2,E3 item
+
+    </pre>
+
+      <div class="legend">
+        <h4>🔑 Leyenda del Diagrama de Contenedores</h4>
+        <ul>
+          <li>
+            <strong>Container (Azul):</strong> Aplicación o servicio ejecutable
+          </li>
+          <li>
+            <strong>ContainerDb (Azul con cilindro):</strong> Base de datos o
+            almacenamiento
+          </li>
+          <li>
+            <strong>System_Boundary (Línea punteada):</strong> Límite del
+            sistema
+          </li>
+          <li>
+            <strong>Tecnologías indicadas:</strong> Stack tecnológico de cada
+            contenedor
+          </li>
+        </ul>
+      </div>
+
+      <div class="tech-stack">
+        <div class="tech-item">
+          <strong>Frontend</strong>
+          React Native, React.js, TypeScript, Redux Toolkit
+        </div>
+        <div class="tech-item">
+          <strong>Backend</strong>
+          Node.js, Express, GraphQL, REST APIs
+        </div>
+        <div class="tech-item">
+          <strong>Databases</strong>
+          PostgreSQL 15, MongoDB 6, Redis 7
+        </div>
+        <div class="tech-item">
+          <strong>Messaging</strong>
+          Apache Kafka, Zookeeper
+        </div>
+        <div class="tech-item">
+          <strong>Security</strong>
+          OAuth 2.0, JWT, HashiCorp Vault
+        </div>
+        <div class="tech-item">
+          <strong>Gateway</strong>
+          Kong Gateway, NGINX, Rate Limiting
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- DIAGRAMA 3: COMPONENTES (C4 Level 3) -->
+    <!-- ============================================ -->
+
+    <h2>🔧 Diagrama 3: Componentes del MS-Pagos (C4 Level 3)</h2>
+
+<div class="section">
+        <strong>🎯 Audiencia:</strong> Desarrolladores, arquitectos de software
+        que implementarán el sistema<br />
+        <strong>📋 Propósito:</strong> Detallar los componentes internos de un
+        contenedor específico (MS-Pagos), sus responsabilidades, patrones y
+        comunicación<br />
+        <strong>🔍 Nivel de detalle:</strong> Componentes internos, clases
+        principales, patrones arquitectónicos, protocolos de seguridad
+      </div>
+
+    <div class="diagram">
+      <div class="diagram-title">
+        Arquitectura de Componentes - Microservicio de Pagos
+      </div>      
+
+      <pre class="mermaid">
+flowchart TD
+    %% === TÍTULO PRINCIPAL ===
+    Title[<h2>🔧 MS-Pagos - Diagrama de Componentes</h2><br/><small>Microservicio de Procesamiento de Pagos con Event Sourcing</small>]
+
+    %% === API GATEWAY ===
+    GW[🌐<br/><b>API Gateway</b><br/><small>Apollo Gateway<br/>GraphQL Federation :8080</small>]
+
+    %% === MICROSERVICIO PRINCIPAL - ARRIBA ===
+    subgraph MSPagos[💸 MS-Pagos - Microservicio de Pagos]
+        direction TB
+        
+        subgraph EntryLayer[🔐 Capa de Entrada & Seguridad]
+            C1[🛡️<br/><b>Payment API Controller</b><br/><small>Express.js REST<br/>Valida JWT, Rate Limiting</small>]
+            C2[🔑<br/><b>Auth Middleware</b><br/><small>JWT Validator<br/>Verifica OAuth 2.0, Claims</small>]
+            C12[🔒<br/><b>Encryption Service</b><br/><small>AES-256-GCM<br/>Cifrado datos sensibles</small>]
+        end
+
+        subgraph BusinessLayer[💼 Lógica de Negocio Core]
+            C3[⚙️<br/><b>Transfer Service</b><br/><small>Business Logic<br/>Orquesta proceso transferencia</small>]
+            C4[✅<br/><b>Validation Component</b><br/><small>Joi/Zod Schemas<br/>Valida montos, límites diarios</small>]
+            C5[🕵️<br/><b>Fraud Detection</b><br/><small>ML Model + Rules Engine<br/>Scoring riesgo, bloqueo automático</small>]
+            C6[🔄<br/><b>Saga Orchestrator</b><br/><small>Saga Pattern<br/>Coordina transacciones distribuidas</small>]
+        end
+
+        subgraph DataLayer[💾 Capa de Datos & Eventos]
+            C9[💾<br/><b>Transaction Repository</b><br/><small>TypeORM/Sequelize<br/>Acceso datos transaccionales</small>]
+            C13[📨<br/><b>Event Box</b><br/><small>Outbox Pattern<br/>Garantiza entrega eventos atómica</small>]
+            C14[🔄<br/><b>CQRS Projector</b><br/><small>Projection Handler<br/>Sincroniza datos lectura</small>]
+            C10[📢<br/><b>Event Publisher</b><br/><small>Kafka Producer<br/>Publica eventos de dominio</small>]
+            C11[📝<br/><b>Audit Logger</b><br/><small>Winston/Pino<br/>Registro compliance, auditoría</small>]
+        end
+
+        subgraph InfrastructureLayer[🛠️ Infraestructura & Comunicación]
+            C7[⚡<br/><b>Circuit Breaker</b><br/><small>Opossum/Hystrix<br/>Fail-fast, fallback logic</small>]
+            C8[🌐<br/><b>ACH Network Client</b><br/><small>ISO 8583 Protocol<br/>Cliente red interbancaria</small>]
+        end
+    end
+
+    %% === SISTEMAS EXTERNOS - HORIZONTALMENTE POR DEBAJO ===
+    E2[🐘<br/><b>PostgreSQL</b><br/><small>PostgreSQL 15<br/>Base transaccional ACID</small>]
+    E6[🍃<br/><b>MongoDB</b><br/><small>MongoDB 6<br/>Consultas optimizadas</small>]
+    E3[🔴<br/><b>Redis</b><br/><small>Redis 7 Cluster<br/>Cache, locks distribuidos</small>]
+    E4[📬<br/><b>Kafka</b><br/><small>Kafka 3.x + Zookeeper<br/>Event streaming, mensajería</small>]
+    E1[💳<br/><b>Red ACH</b><br/><small>Sistema interbancario<br/>Transferencias externas</small>]
+    E5[🔑<br/><b>Vault</b><br/><small>HashiCorp Vault<br/>Gestión secrets, certificados</small>]
+
+    %% === CONEXIONES PRINCIPALES ===
+    GW -->|Envía requests<br/>HTTPS/REST/GraphQL| C1
+
+    %% === CONEXIONES CAPA DE ENTRADA ===
+    C1 -->|Valida autenticación<br/>In-Memory| C2
+    C1 -->|Procesa transferencia<br/>Function Call| C3
+
+    %% === CONEXIONES LÓGICA DE NEGOCIO ===
+    C3 -->|Valida datos entrada<br/>Function Call| C4
+    C3 -->|Verifica patrones fraude<br/>Function Call| C5
+    C3 -->|Inicia orquestación saga<br/>Function Call| C6
+    C3 -->|Registra operación auditoría<br/>Function Call| C11
+
+    %% === CONEXIONES SAGA ORCHESTRATOR ===
+    C6 -->|Persiste transacción<br/>SQL| C9
+    C6 -->|Llama servicio externo<br/>Function Call| C7
+    C6 -->|Publica eventos negocio<br/>Function Call| C10
+    C6 -->|Cifra datos sensibles<br/>Function Call| C12
+
+    %% === PATRÓN CQRS - FLUJO ESCRITURA ===
+    C9 -->|Evento outbox transaccional<br/>SQL Transaction| C13
+
+    %% === CONEXIONES INFRAESTRUCTURA ===
+    C7 -->|Ejecuta transferencia protegida<br/>Function Call| C8
+
+    %% === CONEXIONES A SISTEMAS EXTERNOS ===
+    C2 -->|Obtiene public keys<br/>HTTPS/TLS 1.3| E5
+    C9 -->|Guarda transacción<br/>SQL/TLS 1.3| E2
+    C9 -->|Usa locks distribuidos<br/>Redis Protocol| E3
+    C13 -->|Publica evento consistente<br/>Kafka Protocol/SASL| E4
+    E4 -->|Consume eventos<br/>Kafka Consumer| C14
+    C14 -->|Sincroniza datos lectura<br/>Bulk Operations| E6
+    C14 -->|Actualiza cache consultas<br/>Redis Protocol| E3
+    C8 -->|Envía transacción segura<br/>ISO 8583/TLS| E1
+    C10 -->|Publica mensaje eventos<br/>Kafka Protocol/SASL| E4
+    C11 -->|Envía log auditoría<br/>Kafka Protocol| E4
+    C12 -->|Obtiene keys cifrado<br/>HTTPS/TLS 1.3| E5
+    C5 -->|Lee scoring cache<br/>Redis Protocol| E3
+
+    %% === ESTILOS CON COLORES PASTEL ===
+    classDef title fill:#FCE4EC,stroke:#C2185B,stroke-width:2px,rx:15,ry:15
+    classDef gateway fill:#E3F2FD,stroke:#1976D2,stroke-width:2px,rx:12,ry:12
+    classDef msPagos fill:#F3E5F5,stroke:#9C27B0,stroke-width:2px,rx:12,ry:12
+    classDef entryLayer fill:#E8F5E9,stroke:#4CAF50,stroke-width:1px,rx:10,ry:10
+    classDef businessLayer fill:#FFF3E0,stroke:#FF9800,stroke-width:1px,rx:10,ry:10
+    classDef dataLayer fill:#E0F2F1,stroke:#00897B,stroke-width:1px,rx:10,ry:10
+    classDef infrastructureLayer fill:#FFEBEE,stroke:#D32F2F,stroke-width:1px,rx:10,ry:10
+    classDef externalSystems fill:#FFF9C4,stroke:#FBC02D,stroke-width:2px,rx:8,ry:8
+    classDef component fill:#FFFFFF,stroke:#666666,stroke-width:1px,rx:8,ry:8
+
+    %% APLICAR ESTILOS ===
+    class Title title
+    class GW gateway
+    class MSPagos msPagos
+    class EntryLayer entryLayer
+    class BusinessLayer businessLayer
+    class DataLayer dataLayer
+    class InfrastructureLayer infrastructureLayer
+    class C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14 component
+    class E1,E2,E3,E4,E5,E6 externalSystems
+
+    %% ESTILOS DE LÍNEAS ===
+    linkStyle 0 stroke:#1976D2,stroke-width:2px
+    linkStyle 1,2 stroke:#4CAF50,stroke-width:1.5px
+    linkStyle 3,4,5,6 stroke:#FF9800,stroke-width:1.5px
+    linkStyle 7,8,9,10 stroke:#00897B,stroke-width:1.5px
+    linkStyle 11 stroke:#4CAF50,stroke-width:2px
+    linkStyle 12 stroke:#D32F2F,stroke-width:1.5px
+    %% Conexiones a sistemas externos
+    linkStyle 13 stroke:#9C27B0,stroke-width:1.5px
+    linkStyle 14 stroke:#0288D1,stroke-width:1.5px
+    linkStyle 15 stroke:#FBC02D,stroke-width:1.5px
+    linkStyle 16 stroke:#7B1FA2,stroke-width:1.5px
+    linkStyle 17,18 stroke:#1976D2,stroke-width:1.5px
+    linkStyle 19 stroke:#E64A19,stroke-width:1.5px
+    linkStyle 20,21 stroke:#7B1FA2,stroke-width:1.5px
+    linkStyle 22 stroke:#9C27B0,stroke-width:1.5px
+    linkStyle 23 stroke:#FBC02D,stroke-width:1.5px
+
+    </pre>
+<!-- Diagrama -->
+      <div class="legend">
+        <h4>🔑 Leyenda del Diagrama de Componentes</h4>
+        <ul>
+          <li>
+            <strong>Component (Verde):</strong> Componente interno del
+            contenedor
+          </li>
+          <li>
+            <strong>Relaciones:</strong> Indican protocolo y tipo de
+            comunicación
+          </li>
+          <li>
+            <strong>Patrones destacados:</strong> Circuit Breaker, Saga, Event
+            Publishing
+          </li>
+        </ul>
+      </div>
+
+      <div class="info-box">
+        <h4>🏗️ Patrones Arquitectónicos Implementados en MS-Pagos</h4>
+        <ul>
+          <li>
+            <strong>Circuit Breaker:</strong> Protección contra fallos en
+            cascada con llamadas externas (ACH Network)
+          </li>
+          <li>
+            <strong>Saga Pattern:</strong> Transacciones distribuidas con
+            compensaciones automáticas
+          </li>
+          <li>
+            <strong>Event Sourcing:</strong> Publicación de eventos para
+            auditoría y sincronización
+          </li>
+          <li>
+            <strong>Repository Pattern:</strong> Abstracción del acceso a datos
+          </li>
+          <li>
+            <strong>Middleware Pattern:</strong> Autenticación y validación como
+            middlewares reutilizables
+          </li>
+          <li>
+            <strong>Retry con Exponential Backoff:</strong> En ACH Client para
+            manejar fallos temporales
+          </li>
+          <li>
+            <strong>Encryption at Rest:</strong> Datos sensibles cifrados con
+            AES-256-GCM
+          </li>
+        </ul>
+      </div>
+
+      <div class="info-box">
+        <h4>🔐 Seguridad Implementada</h4>
+        <ul>
+          <li>
+            <strong>OAuth 2.0 + JWT:</strong> Autenticación y autorización en
+            Auth Middleware
+          </li>
+          <li>
+            <strong>TLS 1.3:</strong> Todas las comunicaciones cifradas
+            (PostgreSQL, ACH Network, Vault)
+          </li>
+          <li>
+            <strong>SASL:</strong> Autenticación en Kafka para event publishing
+          </li>
+          <li>
+            <strong>AES-256-GCM:</strong> Cifrado de datos sensibles en reposo
+          </li>
+          <li>
+            <strong>Secret Management:</strong> Claves rotadas automáticamente
+            desde Vault
+          </li>
+          <li>
+            <strong>Rate Limiting:</strong> En API Controller para prevenir
+            abuse
+          </li>
+          <li>
+            <strong>Input Validation:</strong> Schemas estrictos con Joi/Zod
+          </li>
+          <li>
+            <strong>Audit Logging:</strong> Registro completo de todas las
+            operaciones para compliance
+          </li>
+        </ul>
+      </div>
+
+      <div class="info-box">
+        <h4>☁️ Componentes Cloud Utilizados</h4>
+        <ul>
+          <li>
+            <strong>Kubernetes (k3s/EKS):</strong> Orquestación de contenedores
+            con auto-scaling (HPA)
+          </li>
+          <li>
+            <strong>Managed PostgreSQL (RDS/CloudSQL):</strong> Alta
+            disponibilidad con réplicas multi-AZ
+          </li>
+          <li>
+            <strong>Managed Redis (ElastiCache):</strong> Cluster mode para
+            distributed locks
+          </li>
+          <li>
+            <strong>Managed Kafka (MSK/Confluent):</strong> Event streaming con
+            3+ brokers
+          </li>
+          <li>
+            <strong>AWS S3/Backblaze:</strong> Backup de transacciones y logs de
+            auditoría
+          </li>
+          <li>
+            <strong>CloudWatch/Prometheus:</strong> Métricas de performance y
+            alertas
+          </li>
+          <li>
+            <strong>AWS Secrets Manager/Vault:</strong> Rotación automática de
+            credenciales
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- RESUMEN Y CONCLUSIONES -->
+    <!-- ============================================ -->
+
+    <div class="diagram-container">
+      <h2 >
+        ✅ Resumen de Diagramas C4
+      </h2>
+
+      <div class="info-box">
+        <h4>📊 Tres Niveles de Abstracción</h4>
+        <p>
+          Los diagramas C4 presentados siguen la metodología oficial de Simon
+          Brown, proporcionando diferentes niveles de zoom para diferentes
+          audiencias:
+        </p>
+
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0">
+          <thead>
+            <tr style="background: #3498db; color: white">
+              <th style="padding: 12px; text-align: left">Nivel</th>
+              <th style="padding: 12px; text-align: left">Diagrama</th>
+              <th style="padding: 12px; text-align: left">Audiencia</th>
+              <th style="padding: 12px; text-align: left">Enfoque</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid #ecf0f1">
+              <td style="padding: 12px"><strong>C4 Level 1</strong></td>
+              <td style="padding: 12px">Contexto</td>
+              <td style="padding: 12px">Stakeholders, Gerencia</td>
+              <td style="padding: 12px">
+                Sistema en su entorno, actores, sistemas externos
+              </td>
+            </tr>
+            <tr style="border-bottom: 1px solid #ecf0f1">
+              <td style="padding: 12px"><strong>C4 Level 2</strong></td>
+              <td style="padding: 12px">Contenedores</td>
+              <td style="padding: 12px">Arquitectos, Tech Leads</td>
+              <td style="padding: 12px">
+                Apps, servicios, bases de datos, tecnologías
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 12px"><strong>C4 Level 3</strong></td>
+              <td style="padding: 12px">Componentes</td>
+              <td style="padding: 12px">Desarrolladores</td>
+              <td style="padding: 12px">
+                Componentes internos, patrones, seguridad
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-box">
+        <h4>🎯 Decisiones Arquitectónicas Clave Visualizadas</h4>
+        <ul>
+          <li>
+            ✅ <strong>Arquitectura de Microservicios:</strong> 6 microservicios
+            independientes y especializados
+          </li>
+          <li>
+            ✅ <strong>Event-Driven Architecture:</strong> Kafka como backbone
+            para comunicación asíncrona
+          </li>
+          <li>
+            ✅ <strong>API Gateway Pattern:</strong> Punto de entrada único con
+            autenticación centralizada
+          </li>
+          <li>
+            ✅ <strong>CQRS:</strong> Separación de lecturas (replicas) y
+            escrituras (primary DB)
+          </li>
+          <li>
+            ✅ <strong>Circuit Breaker:</strong> Protección contra fallos en
+            cascada
+          </li>
+          <li>
+            ✅ <strong>Saga Pattern:</strong> Transacciones distribuidas con
+            compensaciones
+          </li>
+          <li>
+            ✅ <strong>Multi-Database:</strong> PostgreSQL (transaccional) +
+            MongoDB (históricos) + Redis (caché)
+          </li>
+          <li>
+            ✅ <strong>Security by Design:</strong> OAuth 2.0, TLS 1.3,
+            encryption at rest, secrets management
+          </li>
+        </ul>
+      </div>
+
+      <div class="info-box">
+        <h4>📐 Convenciones C4 Seguidas</h4>
+        <ul>
+          <li>
+            ✅ Notación estándar de elementos (Person, System, Container,
+            Component)
+          </li>
+          <li>
+            ✅ Distinción clara entre sistemas internos y externos (System_Ext)
+          </li>
+          <li>✅ Uso de System_Boundary para delimitar el sistema</li>
+          <li>✅ Relaciones con descripción y protocolo</li>
+          <li>✅ Tecnologías especificadas en cada contenedor/componente</li>
+          <li>✅ Colores estándar según el modelo C4</li>
+          <li>✅ Tres niveles de abstracción bien diferenciados</li>
+        </ul>
+      </div>
+
+      <div class="legend">
+        <h4>🔗 Referencias</h4>
+        <ul>
+          <li>
+            📖 <strong>C4 Model:</strong>
+            <a href="https://c4model.info/" target="_blank"
+              >https://c4model.info/</a
+            >
+          </li>
+          <li>
+            📖 <strong>C4 Architecture:</strong> Simon Brown - Visualising
+            Software Architecture
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      mermaid.initialize({
+        startOnLoad: true,
+        theme: "default",
+        c4: {
+          diagramMarginX: 50,
+          diagramMarginY: 10,
+          c4ShapeMargin: 50,
+          c4ShapePadding: 20,
+          width: 216,
+          height: 60,
+          boxMargin: 10,
+          useMaxWidth: true,
+        },
+      });
+    </script>
+    <script src="mermaid.min.js"></script>
+    <script src="panzoom.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
