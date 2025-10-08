@@ -7,7 +7,7 @@ Features del usuarios
 - Consulta de datos basicos (Microservicio)
 - Propongo crear un microservicio de auditoria para generar eventos de auditoria + contenedor para grafana + prometheus (para reglas de borrado y retención) Usar GraphQL ->procesador de eventos -> guarda Logs
 									-> Explorador de metricas	
-- Micro Autenticacion	
+-Micro Autenticacion	
 -Microservicio de Notificaciones
 -Microservicios subida y descarga de archivos	
 -API-Gateway en GraphQL con Apollo															
@@ -37,7 +37,7 @@ Proponer 3 Variantes:
 - Flutter (Maduro, tiene una gran comunidad, pero implica contratar personal en dart)
 - Kotlin Multiplatform (Innovador pero Lleva solo 4 años en el mercado, una comunidad aun pequeña, pocos paquetes)
 
-Authenticacion:
+Authentication:
 -----------------
 Proponer el mejor flujo de autenticacion basado en OAuth2.0. La compañia ya tienes un servicio para OAuth2
 
@@ -52,16 +52,16 @@ Para seguridad
 Propongo usar un WAF (web applicaciont firewall)
 Propongo usar Capa de Middleware
 Propongo usar un VAULT secret manager
-Protocolos HTTPS con proxy inverso para balancear las peticiones si un certificado se vence
+Protocolos HTTPS con proxy inverso para balancear las peticiones si un certificado se vence, hay ataques o saturación.
 Implementar politicas de seguridad
 
 Implementar Kubernete, puede ser en cualqeuyira de los siguientes (Openshif/EKS/AKS/GKE/)
 ----------------------
-Contratar 2 nodos para producción en cada nodo tener 3 pods con replicas de los servicios con configuracion de autoescalado vertical y balanceo automático de carga entre instancias con algoritmo de balanceo más conveniente. El autoescalado automatico ayuda a reducir costos.
+Contratar 2 nodos para producción en cada nodo tener 3 pods con replicas de los servicios con configuracion de autoescalado horizontal y vertical y balanceo automático de carga entre instancias con algoritmo de balanceo más conveniente. El autoescalado automatico ayuda a reducir costos.
 Implementar HealthChecking con ELK stack (Elasticsearch, Logstash, Kibana) para monitoreo de contenedores o utilizar las herramientas del cloud.
 Contratar 2 nodos  para pre-producción
-Contratar 1 nodo para desarrollo que va a tener dos POD, uno para desarrollo y otro para QA fraccionando los recursos a la mitad para cada ambiente.
-Configurar varios docker-compose para grupos de servicios.
+Contratar 1 nodo para desarrollo que va a tener dos namespace, uno para desarrollo y otro para QA fraccionando los recursos a la mitad para cada ambiente.
+Configurar varios docker-compose para grupos de servicios, kubernets yml y orquestar deploy.
 Utilizar kafka para bus de mensajeria, junto a zookeeper para configuracion de clusters y replicacion.
 
 
