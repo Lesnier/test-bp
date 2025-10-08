@@ -23,6 +23,12 @@ Propuesta técnica completa de arquitectura de software para un sistema bancario
 
 > 📄 Documento completo de 17 capítulos con todos los diagramas y tablas para lectura offline
 
+## 📥 Ver en la Web
+
+**[⬇️ Visitar Propuesta Completa en PDF](https://test.keywordcv.com/)**
+
+> 📄 Página web con 17 capítulos con todos los diagramas y tablas para lectura online
+
 ---
 
 ## Diagramas de Arquitectura (Modelo C4)
