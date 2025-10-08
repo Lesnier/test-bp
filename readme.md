@@ -25,7 +25,7 @@ Propuesta técnica completa de arquitectura de software para un sistema bancario
 
 ## 📥 Ver en la Web
 
-**[⬇️ Visitar Propuesta Completa en PDF](https://test.keywordcv.com/)**
+**[⬇️ Visitar Propuesta Completa en la Web](https://test.keywordcv.com/)**
 
 > 📄 Página web con 17 capítulos con todos los diagramas y tablas para lectura online
 
